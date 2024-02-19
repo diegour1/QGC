@@ -1,2 +1,2 @@
 # DMVQC
-Density Matrix Variational Quantum Classification Python library
+Density Matrix Variational Quantum Classifier Python library
