@@ -13,7 +13,6 @@ Welcome to DMVQC's documentation!
    modules
 
 
-
 Indices and tables
 ==================
 

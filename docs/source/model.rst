@@ -1,13 +1,13 @@
-model1 package
-==============
+model package
+=============
 
 Submodules
 ----------
 
-model1.model module
--------------------
+model.model module
+------------------
 
-.. automodule:: model1.model
+.. automodule:: model.model
    :members:
    :undoc-members:
    :show-inheritance:
@@ -15,7 +15,7 @@ model1.model module
 Module contents
 ---------------
 
-.. automodule:: model1
+.. automodule:: model
    :members:
    :undoc-members:
    :show-inheritance:

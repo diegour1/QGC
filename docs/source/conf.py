@@ -23,8 +23,15 @@ release = '0.1'
 extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.viewcode',
-    'sphinx.ext.autodoc'
+    'sphinx.ext.autodoc',
+    'sphinx.ext.napoleon',
+    'sphinx_autodoc_typehints'
     ]
+
+napoleon_use_param = True
+
+always_document_param_types = True
+html_show_sphinx = False
 
 templates_path = ['_templates']
 exclude_patterns = []
