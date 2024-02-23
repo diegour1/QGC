@@ -1,4 +1,4 @@
-!pip install tensorcircuit
+#!pip install tensorcircuit
 
 from functools import partial
 import numpy as np
