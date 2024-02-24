@@ -1,5 +1,3 @@
-#!pip install tensorcircuit
-
 from functools import partial
 import numpy as np
 import tensorflow as tf
@@ -114,13 +112,11 @@ def dmkde_mixed_variational_density_estimation_fixed_qaff(U_conjtrans_sample_par
         circuit_base_rz_n(qc_param, num_qubits_param-1, target_qubit_param)
         target_qubit_param -= 1
 
-    # learning pure state complex phase
-
+    # Learning pure state complex phase
     for i in range(1, n_total_qubits_temp+1):
       circuit_base_rz_n(c, i, i - 1)
 
-    # value to predict
-
+    # Value to predict
     c.any(*[n for n in range(n_qrff_qubits_temp)], unitary = U_conjtrans_sample_param)
 
     # trace out ancilla qubits, find probability of [000] state for density estimation
