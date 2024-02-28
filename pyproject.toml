@@ -1,0 +1,15 @@
+[project]
+
+name = "DMVQC"
+version = "0.1"
+authors = [
+  { name="Diego Useche" },
+  { name="Sebastian Molina" }
+]
+description = "DMVQC"
+readme = "README.md"
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
