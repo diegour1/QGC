@@ -19,8 +19,6 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
-[tool.setuptools.packages]
-
 [options]
 packages = find:
 package_dir =
