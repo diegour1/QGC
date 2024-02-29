@@ -20,7 +20,6 @@ classifiers = [
 ]
 
 [options]
-packages = find:
 package_dir =
     =src
 
