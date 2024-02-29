@@ -7,5 +7,5 @@ package_dir =
     =src
 packages = find_namespace:
 
-[options.packages.find]
-where = src
+[tool.setuptools.packages.find]
+where = ["src/dmvqc"]
