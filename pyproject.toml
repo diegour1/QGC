@@ -7,7 +7,7 @@ name = "dmvqc"
 version = "0.1"
 
 authors = [
-  { name="Diego Useche"},
+  { name="Diego Useche" },
   { name="Sebastian Molina" }
 ]
 

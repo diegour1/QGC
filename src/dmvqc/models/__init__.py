@@ -1,5 +1,5 @@
-from ._dmkde import DMKDE
+from _dmkde import DMKDE
 
 __all__ = [
-    "DMKDE"
+    "DMKDE",
 ]

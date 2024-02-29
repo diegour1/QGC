@@ -1,7 +1,6 @@
-import models
-import data
+from . import data, models
 
 __all__ = [
+    'data',
     'models', 
-    'data'
 ]
