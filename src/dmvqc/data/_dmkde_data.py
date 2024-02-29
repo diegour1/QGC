@@ -5,7 +5,7 @@ import random
 from scipy.stats import norm
 import matplotlib.pyplot as plt
 
-def generate_numbers(k, N, seed=0):
+def _generate_numbers(k, N, seed=0):
     
     random.seed(seed)
 
@@ -20,7 +20,7 @@ def generate_numbers(k, N, seed=0):
 
     return differences
 
-def predict_features(X, var, gamma):
+def _predict_features(X, var, gamma):
     r"""
     Add documentation.
     """
@@ -30,7 +30,7 @@ def predict_features(X, var, gamma):
     return X_feat
 
 
-def create_U_train(x_train_param, seed=0):
+def _create_U_train(x_train_param, seed=0):
     r"""
     Given the eigenvalues this function return a Unitary gate which converts :math:`|0\rangle` into :math:`|\psi\rangle`.
 
@@ -81,7 +81,7 @@ def dmkde_data(
         means = rng.uniform(domain[0], domain[1], size=k)
         stds = rng.uniform(0.5, 2, size=k)
 
-        sample_sizes = generate_numbers(k, n)
+        sample_sizes = _generate_numbers(k, n)
 
     samples = []
     for i in range(k):
@@ -99,17 +99,17 @@ def dmkde_data(
     # U_train = np.random.uniform(-7, 14, int(len(x)/(n_rffs-1))).reshape(-1, 1)
     weights_qrff = rng.normal(size=n_rffs)
 
-    X_feat_train = predict_features(X, weights_qrff, gamma)
-    X_feat_test = predict_features(X_plot, weights_qrff, gamma)
+    X_feat_train = _predict_features(X, weights_qrff, gamma)
+    X_feat_test = _predict_features(X_plot, weights_qrff, gamma)
     
     Y_feat_train = np.ones(len(X_feat_train)).reshape(-1, 1)
 
     U_dagger_train = np.array(
-        [np.conjugate(create_U_train(X_feat_train[i]).T) for i in range(len(X_feat_train))]
+        [np.conjugate(_create_U_train(X_feat_train[i]).T) for i in range(len(X_feat_train))]
         )
     
     U_dagger_test = np.array(
-        [np.conjugate(create_U_train(X_feat_test[i]).T) for i in range(len(X_feat_test))]
+        [np.conjugate(_create_U_train(X_feat_test[i]).T) for i in range(len(X_feat_test))]
         )
 
     return {'X':X,
