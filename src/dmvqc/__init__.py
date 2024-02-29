@@ -1,5 +1,5 @@
-import .models
-import .data
+import models
+import data
 
 __all__ = [
     'models', 
