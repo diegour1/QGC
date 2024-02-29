@@ -1,3 +1,11 @@
 [build-system]
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+[options]
+package_dir =
+    =src
+packages = find_namespace:
+
+[options.packages.find]
+where = src
