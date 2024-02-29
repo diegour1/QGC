@@ -13,3 +13,14 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
+
+dependencies = [
+    'cirq',
+    'grpcio-status',     
+    'ipykernel',      
+    'qiskit ',        
+    'tensorcircuit',   
+    'tensorflow', 
+    'numpy',  
+    'scipy',         
+]
