@@ -2,5 +2,17 @@
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
-namespace_packages = dmvqc
+[project]
+name = "dmvqc"
+version = "0.1"
+dependencies = [
+    'cirq',
+    'grpcio-status',     
+    'ipykernel',      
+    'qiskit ',        
+    'tensorcircuit',   
+    'tensorflow', 
+    'numpy',  
+    'scipy',         
+]
 
