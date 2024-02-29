@@ -22,13 +22,4 @@ classifiers = [
 [tool.setuptools.packages]
 find = {}
 
-dependencies = [
-    'cirq',
-    'grpcio-status',     
-    'ipykernel',      
-    'qiskit ',        
-    'tensorcircuit',   
-    'tensorflow', 
-    'numpy',  
-    'scipy',         
-]
+
