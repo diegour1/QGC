@@ -5,6 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dmvqc"
 version = "0.1"
+
+authors = [
+  { name="Diego Useche"},
+  { name="Sebastian Molina" }
+]
+
 dependencies = [
     'cirq',
     'grpcio-status',     
