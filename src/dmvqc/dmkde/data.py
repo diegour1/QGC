@@ -3,7 +3,7 @@
 import numpy as np
 import random
 from scipy.stats import norm
-
+import matplotlib.pyplot as plt
 
 def generate_numbers(k, N, seed=0):
     
@@ -122,7 +122,31 @@ def dmkde_data(
             'n_rffs': n_rffs}
 
     
+def plot_predict(model, X, X_plot, true_dens, U_dagger_test, n_rffs, **kwargs):
+    params = {
+        'axes.labelsize': 8,
+        'legend.fontsize': 10,
+        'xtick.labelsize': 10,
+        'ytick.labelsize': 10,
+        'text.usetex': False,
+        'figure.figsize': [5.5, 4.5]
+    }
 
+    plt.rcParams.update(params)
+
+    lw = 2
+
+    predictions = model.predict(U_dagger_test)
+
+    plt.plot(X_plot[:, 0], predictions, color='green', lw=lw,
+            linestyle='-', label=f"DMKDE - {n_rffs} QRFF")
+    plt.plot(X_plot[:, 0], true_dens, "maroon", label='True pdf')
+    indexes = np.random.randint(0, len(X), len(X_plot))
+    plt.plot(X[indexes, 0], -0.00125 - 0.00675 * np.random.random(len(indexes)), '+k')
+
+    plt.legend(loc='upper left')
+    plt.xlabel('X', fontsize=12)
+    plt.ylabel('Probability Density', fontsize=10)
 
 
 
