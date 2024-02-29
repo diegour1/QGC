@@ -2,10 +2,5 @@
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
-[options]
-package_dir =
-    =src
-packages = find_namespace:
+namespace_packages = dmvqc
 
-[tool.setuptools.packages.find]
-where = ["src/dmvqc"]
