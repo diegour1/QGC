@@ -20,7 +20,5 @@ classifiers = [
 ]
 
 [options]
-package_dir =
-    =src
-
+packages=find:
 
