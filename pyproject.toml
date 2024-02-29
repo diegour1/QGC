@@ -1,32 +1,3 @@
-[project]
-
-name = "dmvqc"
-version = "0.1"
-authors = [
-  { name="Diego Useche" },
-  { name="Sebastian Molina" }
-]
-description = "DMVQC"
-readme = "README.md"
-
-dependencies = [
-    'cirq',
-    'grpcio-status',     
-    'ipykernel',      
-    'qiskit ',        
-    'tensorcircuit',   
-    'tensorflow', 
-    'numpy',  
-    'scipy',         
-]
-
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent",
-]
-
-[options]
-packages = find:
-
-[options.packages.find]
-where = src
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
