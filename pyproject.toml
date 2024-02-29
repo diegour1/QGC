@@ -1,3 +1,8 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+
 [project]
 
 name = "dmvqc"
@@ -13,6 +18,9 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
 ]
+
+[tool.setuptools.packages]
+find = {}
 
 dependencies = [
     'cirq',
