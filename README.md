@@ -6,7 +6,7 @@ Density Matrix Variational Quantum Classifier Python library
 As the repo is in private mode, to install the library is necessary to [generate a personal token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic) (less than 1 min) and use it as authentication for the installation as follows:
 
 <pre>
-!pip install --upgrade --quiet git+https://<b>[personal-token-kere]</b>@github.com/diegour1/DMVQC.git
+!pip install --upgrade --quiet git+https://<b>[personal-token-here]</b>@github.com/diegour1/DMVQC.git
 </pre>
 
 Paste your personal token in the input box that appears after running the next cell and press <kbd>Enter</kbd>. it will automatically install the package.
