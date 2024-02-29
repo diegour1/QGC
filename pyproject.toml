@@ -20,6 +20,10 @@ classifiers = [
 ]
 
 [tool.setuptools.packages]
-find = {}
+
+[options]
+packages = find:
+package_dir =
+    =src
 
 
