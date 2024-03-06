@@ -15,7 +15,7 @@ dependencies = [
     'cirq',
     'grpcio-status',     
     'ipykernel',      
-    'qiskit ',        
+    'qiskit',        
     'tensorcircuit',   
     'tensorflow', 
     'numpy',  
