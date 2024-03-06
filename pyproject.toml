@@ -19,7 +19,7 @@ dependencies = [
     'tensorcircuit',   
     'tensorflow', 
     'numpy',  
-    'scipy',         
+    'scipy' 
 ]
 
 [tool.setuptools]
