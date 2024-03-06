@@ -22,6 +22,6 @@ dependencies = [
     'scipy' 
 ]
 
-[tool.setuptools]
-package_dir = {"": "src"}
+[tool.setuptools.packages.find]
+where = ["src"]
 
