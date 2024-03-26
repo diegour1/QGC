@@ -1,5 +1,5 @@
-# DMVQC
-Density Matrix Variational Quantum Classifier Python library
+# QVKDC
+Quantum variational kernel density classification Python library
 
 ## Installation
 
