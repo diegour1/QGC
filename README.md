@@ -1,5 +1,5 @@
-# QVKDC
-Quantum variational kernel density classification Python library
+# VQKDC
+Variational quantum kernel density classification Python library
 
 ## Installation
 
