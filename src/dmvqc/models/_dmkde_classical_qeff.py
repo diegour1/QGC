@@ -8,8 +8,6 @@ tc.set_backend("tensorflow")
 tc.set_dtype("complex128")
 
 
-N_FFS = 32
-
 
 class QFeatureMapQuantumEnhancedFF(tf.keras.layers.Layer):
     """Quantum feature map including the complex part of random Fourier Features.
@@ -96,14 +94,3 @@ class QFeatureMapQuantumEnhancedFF(tf.keras.layers.Layer):
     def compute_output_shape(self, input_shape):
         return (input_shape[0], self.dim)
     
-def dmkde_classical_qeff(**kwargs):
-    fm_qeff_x = QFeatureMapQuantumEnhancedFF(DIM_X, dim=N_FFS, gamma=GAMMA, random_state= RANDOM_STATE_QEFF)
-    qmd = qmc_models.ComplexQMDensity(fm_qeff_x, N_FFS)
-    qmd.compile()
-    qmd.fit(X_train, epochs=1, batch_size = 1) ### must keep the batch size = 1
-    #qmd.fit(X_train[600:601], epochs=1, batch_size = 1) ### must keep the batch size = 1, uncomment for single point prediction
-    predictions_classical_qeff = tf.cast(tf.math.pow((GAMMA/(tf.constant(math.pi))), DIM_X/2)*qmd.predict(X_plot, batch_size = 1), tf.float32).numpy()
-    predictions_classical_qeff_train = tf.cast(tf.math.pow((GAMMA/(tf.constant(math.pi))), DIM_X/2)*qmd.predict(X_train, batch_size = 1), tf.float32).numpy()
-    predictions_classical_qeff_test = tf.cast(tf.math.pow((GAMMA/(tf.constant(math.pi))), DIM_X/2)*qmd.predict(X_test, batch_size = 1), tf.float32).numpy()
-
-    return predictions_classical_qeff_train, predictions_classical_qeff_test, predictions_classical_qeff

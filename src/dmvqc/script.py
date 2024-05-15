@@ -2,8 +2,14 @@
 import argparse
 import os
 from inspect import getfullargspec
+
 import matplotlib.pyplot as plt
+
 import numpy as np
+import math
+import tensorflow as tf
+import qmc.tf.layers as qmc_layers
+import qmc.tf.models as qmc_models
 
 from data import load_data
 from data._dmkde_data import _predict_features, _create_U_train
@@ -29,11 +35,49 @@ DATASETS = ["potential_1", "potential_2", "star_eight"]
 NUM_QUBITS_FFS = 5 ## set 6 for the final experiments
 NUM_ANCILLA_QUBITS = 2 # set 2 for the final experiments
 
-GAMMA_DICT = {"binomial": 2., "potential_1": 4., "potential_2": 16., "arc": 4., "star": 16.}
-RANDOM_STATE_QRFF_DICT = {"binomial": 324, "potential_1": 125, "potential_2": 178, "arc": 7, "star": 1224}
-RANDOM_STATE_QEFF_DICT = {"binomial": 3, "potential_1": 15, "potential_2": 78, "arc": 73, "star": 24}
-EPOCHS_DICT  = {"binomial": 0, "potential_1": 8, "potential_2": 0, "arc": 60, "star": 60}
-LEARNING_RATE_DICT = {"binomial": 0.0005, "potential_1": 0.0005, "potential_2": 0.005, "arc": 0.0005, "star": 0.0005}
+GAMMA_DICT = {"binomial": 2., "potential_1": 4., "potential_2": 16., "arc": 4., "star_eight": 16.}
+RANDOM_STATE_QRFF_DICT = {"binomial": 324, "potential_1": 125, "potential_2": 178, "arc": 7, "star_eight": 1224}
+RANDOM_STATE_QEFF_DICT = {"binomial": 3, "potential_1": 15, "potential_2": 78, "arc": 73, "star_eight": 24}
+EPOCHS_DICT  = {"binomial": 0, "potential_1": 8, "potential_2": 0, "arc": 60, "star_eight": 60}
+LEARNING_RATE_DICT = {"binomial": 0.0005, "potential_1": 0.0005, "potential_2": 0.005, "arc": 0.0005, "star_eight": 0.0005}
+
+def _raw_kde_exec(X_train, X_plot, X_test, GAMMA):
+    raw_kde_probability_train = np.array([_raw_kde(x_temp[np.newaxis,:], X_train, GAMMA) for x_temp in X_train])
+    raw_kde_probability_test = np.array([_raw_kde(x_temp[np.newaxis,:], X_train, GAMMA) for x_temp in X_test])
+    raw_kde_probability = np.array([_raw_kde(x_temp[np.newaxis,:], X_train, GAMMA) for x_temp in X_plot])
+
+    return raw_kde_probability_train, raw_kde_probability_test, raw_kde_probability
+
+
+def _dmkde_classical_qeff_exec(X_train, X_test, X_plot, GAMMA, DIM_X, N_FFS, RANDOM_STATE_QEFF):
+    fm_qeff_x = QFeatureMapQuantumEnhancedFF(DIM_X, dim=N_FFS, gamma=GAMMA, random_state= RANDOM_STATE_QEFF)
+    qmd = qmc_models.ComplexQMDensity(fm_qeff_x, N_FFS)
+    qmd.compile()
+    qmd.fit(X_train, epochs=1, batch_size = 1) ### must keep the batch size = 1
+    #qmd.fit(X_train[600:601], epochs=1, batch_size = 1) ### must keep the batch size = 1, uncomment for single point prediction
+    predictions_classical_qeff = tf.cast(tf.math.pow((GAMMA/(tf.constant(math.pi))), DIM_X/2)*qmd.predict(X_plot, batch_size = 1), tf.float32).numpy()
+    predictions_classical_qeff_train = tf.cast(tf.math.pow((GAMMA/(tf.constant(math.pi))), DIM_X/2)*qmd.predict(X_train, batch_size = 1), tf.float32).numpy()
+    predictions_classical_qeff_test = tf.cast(tf.math.pow((GAMMA/(tf.constant(math.pi))), DIM_X/2)*qmd.predict(X_test, batch_size = 1), tf.float32).numpy()
+
+    return predictions_classical_qeff_train, predictions_classical_qeff_test, predictions_classical_qeff
+
+
+def _dmkde_classical_qrff_exec(N_FFS, GAMMA, RANDOM_STATE_QRFF, DIM_X, X_train, X_test, X_plot, type_ffs = "qrff"):
+    if type_ffs == "rff":
+        fm_x = qmc_layers.QFeatureMapRFF(DIM_X, dim=N_FFS, gamma=GAMMA/2, random_state=RANDOM_STATE_QRFF)
+        qmd = qmc_models.QMDensity(fm_x, N_FFS)
+    elif type_ffs == "qrff":
+        fm_x = qmc_layers.QFeatureMapComplexRFF(DIM_X, dim=N_FFS, gamma=GAMMA/2, random_state= RANDOM_STATE_QRFF)
+        qmd = qmc_models.ComplexQMDensity(fm_x, N_FFS)
+    qmd.compile()
+    qmd.fit(X_train, epochs=1)
+    #qmd.fit(X_train[600:601], epochs=1) # uncomment for single point prediction
+
+    predictions_classical = tf.cast(tf.math.pow((GAMMA/(tf.constant(math.pi))), DIM_X/2)*qmd.predict(X_plot), tf.float32).numpy()
+    predictions_classical_train = tf.cast(tf.math.pow((GAMMA/(tf.constant(math.pi))), DIM_X/2)*qmd.predict(X_train), tf.float32).numpy()
+    predictions_classical_test = tf.cast(tf.math.pow((GAMMA/(tf.constant(math.pi))), DIM_X/2)*qmd.predict(X_test), tf.float32).numpy()
+
+    return predictions_classical_train, predictions_classical_test, predictions_classical
 
 
 def _vqkde_qeff_exec(X_train, X_test, X_plot, GAMMA, RANDOM_STATE_QEFF, EPOCHS, DIM_X, N_TRAINING_DATA):
@@ -50,6 +94,7 @@ def _vqkde_qeff_exec(X_train, X_test, X_plot, GAMMA, RANDOM_STATE_QEFF, EPOCHS, 
     predictions_plot = vc.predict(X_plot)
 
     return predictions_train, predictions_test, predictions_plot
+
 
 def _vqkde_qrff_exec(
         X_train, X_test, X_plot, GAMMA, DIM_X, RANDOM_STATE_QRFF, N_FFS, LEARNING_RATE, N_TRAINING_DATA, EPOCHS):
@@ -75,15 +120,40 @@ def _vqkde_qrff_exec(
 
     return predictions_train, predictions_test, predictions_plot
 
+
 def run(model, **kwargs):
 
     match model:
         case "raw_kde":
-            pass
+            fn_args = set(getfullargspec(_raw_kde_exec).args)
+            fn_required_args = fn_args - set(getfullargspec(run).args)
+
+            required_dict = {
+                item: kwargs[item] for item in fn_required_args if item in kwargs
+            }
+
+            predictions_train, predictions_test, predictions_plot = _raw_kde_exec(**required_dict)
+
         case "dmkde_qeff":
-            pass
+            fn_args = set(getfullargspec(_dmkde_classical_qeff_exec).args)
+            fn_required_args = fn_args - set(getfullargspec(run).args)
+
+            required_dict = {
+                item: kwargs[item] for item in fn_required_args if item in kwargs
+            }
+
+            predictions_train, predictions_test, predictions_plot = _dmkde_classical_qeff_exec(**required_dict)
+
         case "dmkde_qrff":
-            pass
+            fn_args = set(getfullargspec(_dmkde_classical_qrff_exec).args)
+            fn_required_args = fn_args - set(getfullargspec(run).args)
+
+            required_dict = {
+                item: kwargs[item] for item in fn_required_args if item in kwargs
+            }
+
+            predictions_train, predictions_test, predictions_plot = _dmkde_classical_qrff_exec(**required_dict)
+
         case "vqkde_qeff":
             fn_args = set(getfullargspec(_vqkde_qeff_exec).args)
             fn_required_args = fn_args - set(getfullargspec(run).args)
@@ -93,14 +163,23 @@ def run(model, **kwargs):
             }
 
             predictions_train, predictions_test, predictions_plot = _vqkde_qeff_exec(**required_dict)
-            return predictions_train, predictions_test, predictions_plot
         
         case "vqkde_qrff":
-            pass
+            fn_args = set(getfullargspec(_vqkde_qrff_exec).args)
+            fn_required_args = fn_args - set(getfullargspec(run).args)
+
+            required_dict = {
+                item: kwargs[item] for item in fn_required_args if item in kwargs
+            }
+
+            predictions_train, predictions_test, predictions_plot = _vqkde_qrff_exec(**required_dict)
+        
         case "vqkde_qeff_hea":
             pass
         case "vqkde_qrff_hea":
             pass
+
+    return predictions_train, predictions_test, predictions_plot
     
 
 
@@ -150,6 +229,7 @@ def main():
             predictions_train, predictions_test, predictions_plot = run(model_name, **training_dict)
             
             plt.rcParams.update(params)
+            plt.title(f"{model_name} - {dataset_name}")
             plt.contourf(x, y, predictions_plot.reshape([120,120]))
             plt.colorbar()
             plt.savefig(os.path.join(model_output_dir, f"{model_name}_{dataset_name}.pdf")) 
