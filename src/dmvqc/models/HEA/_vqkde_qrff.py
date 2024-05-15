@@ -31,14 +31,18 @@ class VQKDE_QRFF_HEA:
 
     """
 
-    def __init__(self, dim_x_param, auto_compile=True, var_hea_ansatz_size_param=64, num_layers_hea_param = 3, gamma=2., epochs=15):
+    def __init__(self, dim_x_param, n_qrff_qubits, n_ancilla_qubits, gamma, num_layers_hea = 3, learning_rate = 0.0005, n_training_data = 10000, auto_compile=True):
 
         self.circuit = None
         self.gamma = gamma
         self.dim_x = dim_x_param
-        self.num_layers_hea = num_layers_hea_param
-        self.var_hea_ansatz_size = var_hea_ansatz_size_param
-        self.epochs = epochs
+        self.num_layers_hea = num_layers_hea
+        self.n_qrff_qubits = n_qrff_qubits
+        self.n_ancilla_qubits = n_ancilla_qubits
+        self.n_total_qubits_temp = self.n_ancilla_qubits + self.n_qrff_qubits
+        self.var_hea_ansatz_size = int(self.n_total_qubits_temp*(self.num_layers_hea+1)*2)
+        self.n_training_data = n_training_data
+        self.learning_rate = learning_rate
 
         layer = keras.QuantumLayer(
             partial(self.layer),
@@ -67,21 +71,17 @@ class VQKDE_QRFF_HEA:
             The probability of :math:`|000\rangle` state for density estimation.
         """
 
-        n_rffs_temp = U_dagger.shape[1]
-        n_total_qubits_temp = int(self.var_hea_ansatz_size/((self.num_layers_hea+1)*2))
-        n_qrff_qubits_temp = int(np.log2(n_rffs_temp))
-
         index_iter_hea  = iter(np.arange(len(var_hea_ansatz_param)))
 
         # Instantiate a circuit with the calculated number of qubits.
-        self.circuit = tc.Circuit(n_total_qubits_temp)
+        self.circuit = tc.Circuit(self.n_total_qubits_temp)
 
         def hea_ansatz(qc_param, num_qubits_param, num_layers_param):
-        # encoding
+          # encoding
           for i in range (0, num_qubits_param):
             qc_param.ry(i, theta = var_hea_ansatz_param[next(index_iter_hea)])
             qc_param.rz(i, theta = var_hea_ansatz_param[next(index_iter_hea)])
-        # layers
+          # layers
           for j in range(num_layers_param):
             for i in range (0, num_qubits_param-1):
               qc_param.CNOT(i, i+1)
@@ -92,28 +92,27 @@ class VQKDE_QRFF_HEA:
 
         ## learning pure state with HEA
 
-        hea_ansatz(self.circuit, n_total_qubits_temp, self.num_layers_hea)
+        hea_ansatz(self.circuit, self.n_total_qubits_temp, self.num_layers_hea)
 
         # Value to predict
         self.circuit.any(
-            *[n for n in range(n_qrff_qubits_temp)], unitary=U_dagger
+            *[n for n in range(self.n_qrff_qubits)], unitary=U_dagger
         )
 
         # Trace out ancilla qubits, find probability of [000] state for density estimation
-        return (1./(self.epochs))*\
-                tc.backend.real(
+        return tc.backend.real(
                     tc.quantum.reduced_density_matrix(
                         self.circuit.state(),
-                        cut=[m for m in range(n_qrff_qubits_temp, n_total_qubits_temp)]
+                        cut=[m for m in range(self.n_qrff_qubits, self.n_total_qubits_temp)]
                     )[0, 0]
-                )
+                      )
 
     def loss(self, x_pred, y_pred):
-        return -tf.reduce_sum(tf.math.log(y_pred))
+        return -(1./self.n_training_data)*tf.reduce_sum(tf.math.log(y_pred))
 
     def compile(
             self,
-            optimizer=tf.keras.optimizers.legacy.Adam(0.0005),
+            optimizer=tf.keras.optimizers.legacy.Adam,
             **kwargs):
         r"""
         Method to compile the model.
@@ -127,12 +126,12 @@ class VQKDE_QRFF_HEA:
         """
         self.model.compile(
             loss = self.loss,
-            optimizer=optimizer,
+            optimizer=optimizer(self.learning_rate),
             metrics=[tf.keras.metrics.KLDivergence()],
             **kwargs
         )
 
-    def fit(self, x_train, y_train, batch_size=16, **kwargs):
+    def fit(self, x_train, y_train, batch_size=16, epochs = 60, **kwargs):
         r"""
         Method to fit (train) the model using the ad-hoc dataset.
 
@@ -147,7 +146,7 @@ class VQKDE_QRFF_HEA:
             None.
         """
 
-        self.model.fit(x_train, y_train, batch_size=batch_size, epochs=self.epochs, **kwargs)
+        self.model.fit(x_train, y_train, batch_size=batch_size, epochs = epochs, **kwargs)
 
     def predict(self, x_test):
         r"""
@@ -159,6 +158,5 @@ class VQKDE_QRFF_HEA:
         Returns:
             The predictions of the PDF of the input data.
         """
-
-        return (tf.math.pow((self.gamma/(pi)), self.dim_x/2)*\
+        return (tf.math.pow((self.gamma/(tf.constant(m.pi))), self.dim_x/2)*\
                 self.model.predict(x_test)).numpy()

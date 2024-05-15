@@ -25,8 +25,8 @@ def _predict_features(X, var, gamma):
     Add documentation.
     """
     X_feat = np.ones((len(X), len(var)), dtype = np.complex128)
-    X_feat[:, :] = np.cos(np.sqrt(gamma)*X*var) + 1j*np.sin(np.sqrt(gamma)*X*var)
-    X_feat *= np.sqrt(1/(len(var)))
+    X_feat[:, :] = np.cos(np.sqrt(gamma)*(X@ var)) - 1j*np.sin(np.sqrt(gamma)*(X @ var))
+    X_feat *= np.sqrt(1/(var.shape[1]))
     return X_feat
 
 

@@ -10,8 +10,7 @@ params = {
    }
 
 def save_contour_plot(x, y, predictions):
-    plt.rcParams.update(params)
-
-    plt.contourf(x, y, predictions.reshape([120,120]))
-    plt.colorbar()
-    plt.savefig("spiralsdmkde_mixed_QRFF.pdf")
+   plt.rcParams.update(params)
+   plt.contourf(x, y, predictions.reshape([120,120]))
+   plt.colorbar()
+   plt.savefig("spiralsdmkde_mixed_QRFF.pdf")
