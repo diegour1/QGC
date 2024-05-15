@@ -1,1 +1,1 @@
-recursive-include src/dmvqc/data/raw *
+recursive-include src/vqkde/data/raw *
