@@ -7,6 +7,7 @@ import tensorflow as tf
 from functools import partial
 import numpy as np
 import math as m
+from scipy.stats import entropy, spearmanr
 
 
 
@@ -14,7 +15,6 @@ tc.set_backend("tensorflow")
 tc.set_dtype("complex128")
 
 pi = tf.constant(m.pi)
-
 
 class VQKDE_QRFF:
     r"""
@@ -31,13 +31,18 @@ class VQKDE_QRFF:
 
     """
 
-    def __init__(self, dim_x_param, auto_compile=True, var_pure_state_size=64, gamma=2., epochs=15):
+    def __init__(self, dim_x_param, n_qrff_qubits, n_ancilla_qubits, gamma, learning_rate = 0.0005, n_training_data = 10000, auto_compile=True):
 
         self.circuit = None
         self.gamma = gamma
         self.dim_x = dim_x_param
-        self.var_pure_state_parameters_size = 2*var_pure_state_size - 2
-        self.epochs = epochs
+        self.n_qrff_qubits = n_qrff_qubits
+        self.n_ancilla_qubits = n_ancilla_qubits
+        self.n_total_qubits_temp = self.n_ancilla_qubits + self.n_qrff_qubits
+        self.var_pure_state_parameters_size = 2*(2**self.n_total_qubits_temp - 1)
+        self.n_training_data = n_training_data
+        self.learning_rate = learning_rate
+        #self.epochs = epochs
 
         layer = keras.QuantumLayer(
             partial(self.layer),
@@ -66,14 +71,10 @@ class VQKDE_QRFF:
             The probability of :math:`|000\rangle` state for density estimation.
         """
 
-        n_rffs_temp = U_dagger.shape[1]
-        n_total_qubits_temp = int(np.log2((len(var_pure_state_param)+2)/2))
-        n_qrff_qubits_temp = int(np.log2(n_rffs_temp))
-
         index_it = iter(np.arange(len(var_pure_state_param)))
 
         # Instantiate a circuit with the calculated number of qubits.
-        self.circuit = tc.Circuit(n_total_qubits_temp)
+        self.circuit = tc.Circuit(self.n_total_qubits_temp)
 
         def circuit_base_ry_n(qc_param, num_qubits_param, target_qubit_param):
             if num_qubits_param == 1:
@@ -104,34 +105,32 @@ class VQKDE_QRFF:
                 target_qubit_param -= 1
 
         # Learning pure state
-        for i in range(1, n_total_qubits_temp+1):
+        for i in range(1, self.n_total_qubits_temp+1):
             circuit_base_ry_n(self.circuit, i, i-1)
 
         # Learning pure state complex phase
-        for j in range(1, n_total_qubits_temp+1):
+        for j in range(1, self.n_total_qubits_temp+1):
             circuit_base_rz_n(self.circuit, j, j-1)
 
         # Value to predict
         self.circuit.any(
-            *[n for n in range(n_qrff_qubits_temp)], unitary=U_dagger
+            *[n for n in range(self.n_qrff_qubits)], unitary=U_dagger
         )
 
         # Trace out ancilla qubits, find probability of [000] state for density estimation
-        return (1./(self.epochs))*\
-                tc.backend.real(
-                    tf.cast(self.gamma/pi, tf.complex128)*\
+        return tc.backend.real(
                     tc.quantum.reduced_density_matrix(
                         self.circuit.state(),
-                        cut=[m for m in range(n_qrff_qubits_temp, n_total_qubits_temp)]
+                        cut=[m for m in range(self.n_qrff_qubits, self.n_total_qubits_temp)]
                     )[0, 0]
-                )
+                      )
 
     def loss(self, x_pred, y_pred):
-        return -tf.reduce_sum(tf.math.log(y_pred))
+        return -(1./self.n_training_data)*tf.reduce_sum(tf.math.log(y_pred))
 
     def compile(
             self,
-            optimizer=tf.keras.optimizers.legacy.Adam(0.0005),
+            optimizer=tf.keras.optimizers.legacy.Adam,
             **kwargs):
         r"""
         Method to compile the model.
@@ -145,12 +144,12 @@ class VQKDE_QRFF:
         """
         self.model.compile(
             loss = self.loss,
-            optimizer=optimizer,
+            optimizer=optimizer(self.learning_rate),
             metrics=[tf.keras.metrics.KLDivergence()],
             **kwargs
         )
 
-    def fit(self, x_train, y_train, batch_size=16, **kwargs):
+    def fit(self, x_train, y_train, batch_size=16, epochs = 60, **kwargs):
         r"""
         Method to fit (train) the model using the ad-hoc dataset.
 
@@ -165,7 +164,7 @@ class VQKDE_QRFF:
             None.
         """
 
-        self.model.fit(x_train, y_train, batch_size=batch_size, epochs=self.epochs, **kwargs)
+        self.model.fit(x_train, y_train, batch_size=batch_size, epochs = epochs, **kwargs)
 
     def predict(self, x_test):
         r"""
@@ -177,6 +176,5 @@ class VQKDE_QRFF:
         Returns:
             The predictions of the PDF of the input data.
         """
-
-        return (tf.math.pow((self.gamma/(pi)), self.dim_x/2)*\
+        return (tf.math.pow((self.gamma/(tf.constant(m.pi))), self.dim_x/2)*\
                 self.model.predict(x_test)).numpy()

@@ -1,8 +1,8 @@
 
 from . import HEA
 from ._dmkde_fixed_qaff import DMKDE
-from ._vqkde_qeff import VQKDE_QEFF
-from ._vqkde_qrff import VQKDE_QRFF
+from ._vqkde_mixed_qeff import VQKDE_QEFF
+from ._vqkde_mixed_qrff import VQKDE_QRFF
 
 
 

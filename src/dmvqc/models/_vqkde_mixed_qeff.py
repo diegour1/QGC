@@ -1,4 +1,4 @@
-
+### Variational DMKDE with QEFF
 
 import tensorcircuit as tc
 from tensorcircuit import keras
@@ -32,15 +32,19 @@ class VQKDE_QEFF:
 
     """
 
-    def __init__(self, num_ffs_param, dim_x_param, auto_compile=True, var_pure_state_size=64, gamma=2., epochs=15):
+    def __init__(self, dim_x_param, n_qeff_qubits, n_ancilla_qubits, gamma, learning_rate = 0.0005, random_state = 15, n_training_data = 10000, auto_compile=True):
 
         self.circuit = None
         self.gamma = gamma
         self.dim_x = dim_x_param
-        self.n_rffs = num_ffs_param
-        self.var_pure_state_parameters_size = 2*var_pure_state_size - 2
-        self.qeff_weights =  tf.random.normal((dim_x_param, int(num_ffs_param*2-2)), mean=0.0, stddev=1.0/np.sqrt(num_ffs_param-1), dtype=tf.dtypes.float64)
-        self.epochs = epochs
+        self.n_qeff_qubits = n_qeff_qubits
+        self.n_ancilla_qubits = n_ancilla_qubits
+        self.n_total_qubits_temp = self.n_ancilla_qubits + self.n_qeff_qubits
+        self.num_ffs = 2**self.n_qeff_qubits
+        self.var_pure_state_parameters_size = 2*(2**self.n_total_qubits_temp - 1)
+        self.learning_rate = learning_rate
+        self.n_training_data = n_training_data
+        self.qeff_weights = tf.random.normal((self.dim_x, int(self.num_ffs*1-1)), mean = 0.0, stddev = 2.0/np.sqrt(self.num_ffs - 1), dtype=tf.dtypes.float64, seed = random_state) ## final model self.qeff_weights = tf.random.normal((self.input_dim, int(self.dim*1-1)), mean = 0.0, stddev = 2.0/np.sqrt(self.dim - 1), dtype=tf.dtypes.float64, seed = self.random_state)
 
         layer = keras.QuantumLayer(
             partial(self.layer),
@@ -69,9 +73,6 @@ class VQKDE_QEFF:
             The probability of :math:`|000\rangle` state for density estimation.
         """
 
-        n_total_qubits_temp = int(np.log2((len(var_pure_state_param)+2)/2))
-        n_qeff_qubits_temp = int(np.log2(self.n_rffs))
-
         ### indices pure state
         index_it = iter(np.arange(len(var_pure_state_param)))
 
@@ -79,7 +80,7 @@ class VQKDE_QEFF:
         index_iter_qeff = iter(np.arange(self.qeff_weights.shape[1]))
 
         # Instantiate a circuit with the calculated number of qubits.
-        self.circuit = tc.Circuit(n_total_qubits_temp)
+        self.circuit = tc.Circuit(self.n_total_qubits_temp)
 
         def circuit_base_ry_n(qc_param, num_qubits_param, target_qubit_param):
             if num_qubits_param == 1:
@@ -110,63 +111,52 @@ class VQKDE_QEFF:
                 target_qubit_param -= 1
 
         # Learning pure state
-        for i in range(1, n_total_qubits_temp+1):
+        for i in range(1, self.n_total_qubits_temp+1):
             circuit_base_ry_n(self.circuit, i, i-1)
 
         # Learning pure state complex phase
-        for j in range(1, n_total_qubits_temp+1):
+        for j in range(1, self.n_total_qubits_temp+1):
             circuit_base_rz_n(self.circuit, j, j-1)
 
         # Value to predict
 
         x_sample_temp = tf.expand_dims(x_sample_param, axis=0)
-        phases_temp = tf.cast(tf.sqrt(self.gamma), tf.float64)*tf.linalg.matmul(tf.cast(x_sample_temp, tf.float64), self.qeff_weights)
-        init_qubit_qeff_temp = 0 # qubit at which the qaff mapping starts
+        phases_temp = (tf.cast(tf.sqrt(self.gamma), tf.float64)*tf.linalg.matmul(tf.cast(x_sample_temp, tf.float64), self.qeff_weights))[0]
 
-        def circuit_base_rz_qeff_n(qc_param, num_qubits_param, target_qubit_param, init_qubit_param):
+        def circuit_base_rz_qeff_n(qc_param, num_qubits_param, target_qubit_param):
           if num_qubits_param == 1:
-            qc_param.rz(init_qubit_param, theta = phases_temp[0][next(index_iter_qeff)])
-            qc_param.X(init_qubit_param)
-            qc_param.rz(init_qubit_param, theta = phases_temp[0][next(index_iter_qeff)])
+            qc_param.rz(0, theta = phases_temp[next(index_iter_qeff)] )
           elif num_qubits_param == 2:
-            qc_param.rz(target_qubit_param + init_qubit_param, theta = phases_temp[0][next(index_iter_qeff)])
-            qc_param.X(target_qubit_param + init_qubit_param)
-            qc_param.rz(target_qubit_param + init_qubit_param, theta = phases_temp[0][next(index_iter_qeff)])
-            qc_param.cnot(init_qubit_param, target_qubit_param + init_qubit_param)
-            qc_param.rz(target_qubit_param + init_qubit_param, theta = phases_temp[0][next(index_iter_qeff)])
-            qc_param.X(target_qubit_param + init_qubit_param)
-            qc_param.rz(target_qubit_param + init_qubit_param, theta = phases_temp[0][next(index_iter_qeff)])
+            qc_param.rz(target_qubit_param, theta = phases_temp[next(index_iter_qeff)])
+            qc_param.cnot(0, target_qubit_param)
+            qc_param.rz(target_qubit_param, theta = phases_temp[next(index_iter_qeff)])
             return
           else:
-            circuit_base_rz_qeff_n(qc_param, num_qubits_param-1, target_qubit_param, init_qubit_param)
-            qc_param.cnot(num_qubits_param-2+init_qubit_param, target_qubit_param+init_qubit_param)
-            circuit_base_rz_qeff_n(qc_param, num_qubits_param-1, target_qubit_param, init_qubit_param)
+            circuit_base_rz_qeff_n(qc_param, num_qubits_param-1, target_qubit_param)
+            qc_param.cnot(num_qubits_param-2, target_qubit_param)
+            circuit_base_rz_qeff_n(qc_param, num_qubits_param-1, target_qubit_param)
             target_qubit_param -= 1
 
         # Applying the QEFF feature map
 
-        for i in range( n_qeff_qubits_temp - init_qubit_qeff_temp + 1 - 1, 1 - 1, -1):
-          circuit_base_rz_qeff_n(self.circuit, i, i - 1, init_qubit_qeff_temp)
+        for i in reversed(range(1, self.n_qeff_qubits + 1)):
+          circuit_base_rz_qeff_n(self.circuit, i, i - 1)
 
-        for i in range(init_qubit_qeff_temp, n_qeff_qubits_temp):
+        for i in range(0, self.n_qeff_qubits):
           self.circuit.H(i)
 
         # Trace out ancilla qubits, find probability of [000] state for density estimation
+        return tc.backend.real(tc.quantum.reduced_density_matrix(
+                        self.circuit.state(),
+                        cut=[m for m in range(self.n_qeff_qubits, self.n_total_qubits_temp)]
+                    )[0, 0])
 
-        return (1./(self.epochs))*\
-                tc.backend.real(
-            tc.quantum.reduced_density_matrix(
-                self.circuit.state(),
-                cut=[m for m in range(n_qeff_qubits_temp, n_total_qubits_temp)]
-            )[0, 0]
-        )
-
-    def loss(self, y_train, y_pred):
-        return -tf.reduce_sum(tf.math.log(y_pred)) # this loss function works relatively well
+    def loss(self, x_pred, y_pred):
+        return -(1./self.n_training_data)*tf.reduce_sum(tf.math.log(y_pred))
 
     def compile(
             self,
-            optimizer=tf.keras.optimizers.legacy.Adam(0.0005), # originally 0.0005
+            optimizer=tf.keras.optimizers.legacy.Adam,
             **kwargs):
         r"""
         Method to compile the model.
@@ -180,12 +170,12 @@ class VQKDE_QEFF:
         """
         self.model.compile(
             loss = self.loss,
-            optimizer=optimizer,
+            optimizer=optimizer(self.learning_rate),
             metrics=[tf.keras.metrics.KLDivergence()],
             **kwargs
         )
 
-    def fit(self, x_train, y_train, batch_size=16, **kwargs):
+    def fit(self, x_train, y_train, batch_size, epochs = 60, **kwargs):
         r"""
         Method to fit (train) the model using the ad-hoc dataset.
 
@@ -200,7 +190,7 @@ class VQKDE_QEFF:
             None.
         """
 
-        self.model.fit(x_train, y_train, batch_size=batch_size, epochs=self.epochs, **kwargs)
+        self.model.fit(x_train, y_train, batch_size = batch_size, epochs = epochs, **kwargs)
 
     def predict(self, x_test):
         r"""
@@ -212,7 +202,5 @@ class VQKDE_QEFF:
         Returns:
             The predictions of the PDF of the input data.
         """
-        return (tf.math.pow((self.gamma/(pi)), self.dim_x/2)*\
-            self.model.predict(x_test)).numpy()
-    
-
+        return (tf.math.pow((self.gamma/(tf.constant(m.pi))), self.dim_x/2)*\
+                self.model.predict(x_test)).numpy()
