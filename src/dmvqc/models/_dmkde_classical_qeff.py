@@ -2,7 +2,7 @@ import qmc.tf.layers as qmc_layers
 import qmc.tf.models as qmc_models
 import tensorcircuit as tc
 import tensorflow as tf
-import numoy as np
+import numpy as np
 
 tc.set_backend("tensorflow")
 tc.set_dtype("complex128")
