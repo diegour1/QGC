@@ -19,13 +19,6 @@ from models.HEA import *
 from models._raw_kde import _raw_kde
 
 
-params = {
-    "potential_1": ,
-    "potential_2": , 
-    "star_eight": ,
-}
-
-
 MODELS = ["raw_kde", "dmkde_qeff", "dmkde_qrff", "vqkde_qeff", "vqkde_qrff", "vqkde_qeff_hea", "vqkde_qrff_hea"]
 DATASETS = ["potential_1", "potential_2", "star_eight"]
 
