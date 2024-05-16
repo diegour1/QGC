@@ -137,7 +137,6 @@ def _vqkde_qeff_hea_exec(
     return predictions_train, predictions_test, predictions_plot
 
     
-
 def _vqkde_qrff_hea_exec(
         X_train, X_test, X_plot, GAMMA, DIM_X, RANDOM_STATE_QRFF, N_FFS, LEARNING_RATE, N_TRAINING_DATA, EPOCHS, NUM_LAYERS_HEA):
     r = np.random.RandomState(RANDOM_STATE_QRFF)
@@ -161,82 +160,32 @@ def _vqkde_qrff_hea_exec(
 
     return predictions_train, predictions_test, predictions_plot
 
+
+def _get_required_dict(fn, kwargs):
+    fn_args = set(getfullargspec(fn).args)
+    fn_required_args = fn_args - set(getfullargspec(run).args)
+    return {item: kwargs[item] for item in fn_required_args if item in kwargs}
+
+
 def run(model, **kwargs):
+    exec_functions = {
+        "raw_kde": _raw_kde_exec,
+        "dmkde_qeff": _dmkde_classical_qeff_exec,
+        "dmkde_qrff": _dmkde_classical_qrff_exec,
+        "vqkde_qeff": _vqkde_qeff_exec,
+        "vqkde_qrff": _vqkde_qrff_exec,
+        "vqkde_qeff_hea": _vqkde_qeff_hea_exec,
+        "vqkde_qrff_hea": _vqkde_qrff_hea_exec,
+    }
 
-    match model:
-        case "raw_kde":
-            fn_args = set(getfullargspec(_raw_kde_exec).args)
-            fn_required_args = fn_args - set(getfullargspec(run).args)
-
-            required_dict = {
-                item: kwargs[item] for item in fn_required_args if item in kwargs
-            }
-
-            predictions_train, predictions_test, predictions_plot = _raw_kde_exec(**required_dict)
-
-        case "dmkde_qeff":
-            fn_args = set(getfullargspec(_dmkde_classical_qeff_exec).args)
-            fn_required_args = fn_args - set(getfullargspec(run).args)
-
-            required_dict = {
-                item: kwargs[item] for item in fn_required_args if item in kwargs
-            }
-
-            predictions_train, predictions_test, predictions_plot = _dmkde_classical_qeff_exec(**required_dict)
-
-        case "dmkde_qrff":
-            fn_args = set(getfullargspec(_dmkde_classical_qrff_exec).args)
-            fn_required_args = fn_args - set(getfullargspec(run).args)
-
-            required_dict = {
-                item: kwargs[item] for item in fn_required_args if item in kwargs
-            }
-
-            predictions_train, predictions_test, predictions_plot = _dmkde_classical_qrff_exec(**required_dict)
-
-        case "vqkde_qeff":
-            fn_args = set(getfullargspec(_vqkde_qeff_exec).args)
-            fn_required_args = fn_args - set(getfullargspec(run).args)
-
-            required_dict = {
-                item: kwargs[item] for item in fn_required_args if item in kwargs
-            }
-
-            predictions_train, predictions_test, predictions_plot = _vqkde_qeff_exec(**required_dict)
-        
-        case "vqkde_qrff":
-            fn_args = set(getfullargspec(_vqkde_qrff_exec).args)
-            fn_required_args = fn_args - set(getfullargspec(run).args)
-
-            required_dict = {
-                item: kwargs[item] for item in fn_required_args if item in kwargs
-            }
-
-            predictions_train, predictions_test, predictions_plot = _vqkde_qrff_exec(**required_dict)
-        
-        case "vqkde_qeff_hea":
-            fn_args = set(getfullargspec(_vqkde_qeff_hea_exec).args)
-            fn_required_args = fn_args - set(getfullargspec(run).args)
-
-            required_dict = {
-                item: kwargs[item] for item in fn_required_args if item in kwargs
-            }
-
-            predictions_train, predictions_test, predictions_plot = _vqkde_qeff_hea_exec(**required_dict)
-
-        case "vqkde_qrff_hea":
-            fn_args = set(getfullargspec(_vqkde_qrff_hea_exec).args)
-            fn_required_args = fn_args - set(getfullargspec(run).args)
-
-            required_dict = {
-                item: kwargs[item] for item in fn_required_args if item in kwargs
-            }
-
-            predictions_train, predictions_test, predictions_plot = _vqkde_qrff_hea_exec(**required_dict)
+    if model in exec_functions:
+        fn = exec_functions[model]
+        required_dict = _get_required_dict(fn, kwargs)
+        predictions_train, predictions_test, predictions_plot = fn(**required_dict)
+        return predictions_train, predictions_test, predictions_plot
 
     return predictions_train, predictions_test, predictions_plot
     
-
 
 def main():
     parser = argparse.ArgumentParser(description="Test models on datasets.")
