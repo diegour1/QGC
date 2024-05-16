@@ -216,7 +216,7 @@ def main():
 
         grid = GRID_PARAMS_DICT[dataset_name]
 
-        x, y = np.mgrid[grid["x_range"][0]:grid["x_range"][1]:grid["x_steps"], grid["y_range"][0]:grid["y_range"][1]:grid["y_steps"]]
+        x, y = np.mgrid[grid["x_range"][0]:grid["x_range"][1]:grid["x_step"], grid["y_range"][0]:grid["y_range"][1]:grid["y_step"]]
         pos = np.dstack((x, y))
         X_plot = pos.reshape([14400,2])
 
