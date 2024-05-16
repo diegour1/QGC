@@ -247,10 +247,13 @@ def main():
             "NUM_LAYERS_HEA": 3,
         }
 
-        for model_name in selected_models:
-            model_output_dir = os.path.join(args.o, model_name)
-            os.makedirs(model_output_dir, exist_ok=True)
+        model_output_dir = os.path.join(args.o, dataset_name)
+        os.makedirs(model_output_dir, exist_ok=True)
 
+        for model_name in selected_models:
+            print("#####################################################")
+            print(f"Running model {model_name} in dataset {dataset_name}", end="\n")
+            
             predictions_train, predictions_test, predictions_plot = run(model_name, **training_dict)
             
             plt.rcParams.update(params)
@@ -258,6 +261,9 @@ def main():
             plt.contourf(x, y, predictions_plot.reshape([120,120]))
             plt.colorbar()
             plt.savefig(os.path.join(model_output_dir, f"{model_name}_{dataset_name}.pdf")) 
+
+            print(f"Running model {model_name} in dataset {dataset_name}")
+            print("#####################################################", end="\n")
 
 
 if __name__ == "__main__":
