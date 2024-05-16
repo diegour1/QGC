@@ -185,7 +185,7 @@ def _get_required_dict(fn, kwargs):
     return {item: kwargs[item] for item in fn_required_args if item in kwargs}
 
 
-def run(model, **kwargs):
+def _run(model, **kwargs):
     exec_functions = {
         "raw_kde": _raw_kde_exec,
         "dmkde_qeff": _dmkde_classical_qeff_exec,
@@ -254,7 +254,7 @@ def main():
             print("#####################################################")
             print(f"Running model {model_name} in dataset {dataset_name}", end="\n")
             
-            predictions_train, predictions_test, predictions_plot = run(model_name, **training_dict)
+            predictions_train, predictions_test, predictions_plot = _run(model_name, **training_dict)
             
             plt.rcParams.update(params)
             plt.title(f"{model_name} - {dataset_name}")
@@ -262,7 +262,6 @@ def main():
             plt.colorbar()
             plt.savefig(os.path.join(model_output_dir, f"{model_name}_{dataset_name}.pdf")) 
 
-            print(f"Running model {model_name} in dataset {dataset_name}")
             print("#####################################################", end="\n")
 
 
