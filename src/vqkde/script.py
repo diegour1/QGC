@@ -20,13 +20,10 @@ from models._raw_kde import _raw_kde
 
 
 params = {
-   'axes.labelsize': 12,
-   'legend.fontsize': 12,
-   'xtick.labelsize': 10,
-   'ytick.labelsize': 10,
-   'text.usetex': False,
-   'figure.figsize': [7.0, 6.0]
-   }
+    "potential_1": ,
+    "potential_2": , 
+    "star_eight": ,
+}
 
 
 MODELS = ["raw_kde", "dmkde_qeff", "dmkde_qrff", "vqkde_qeff", "vqkde_qrff", "vqkde_qeff_hea", "vqkde_qrff_hea"]
@@ -40,6 +37,26 @@ RANDOM_STATE_QRFF_DICT = {"binomial": 324, "potential_1": 125, "potential_2": 17
 RANDOM_STATE_QEFF_DICT = {"binomial": 3, "potential_1": 15, "potential_2": 78, "arc": 73, "star_eight": 24}
 EPOCHS_DICT  = {"binomial": 0, "potential_1": 8, "potential_2": 0, "arc": 60, "star_eight": 60}
 LEARNING_RATE_DICT = {"binomial": 0.0005, "potential_1": 0.0005, "potential_2": 0.005, "arc": 0.0005, "star_eight": 0.0005}
+GRID_PARAMS_DICT = {
+    "potential_1": {
+        "x_range": (-4, 4),
+        "y_range": (-4, 4),
+        "x_step": 8/120,
+        "y_step": 8/120
+    },
+    "potential_2": {
+        "x_range": (-4, 4),
+        "y_range": (-3, 3),
+        "x_step": 8/120,
+        "y_step": 6/120
+    },
+    "star_eight": {
+        "x_range": (-7, 7),
+        "y_range": (-7, 7),
+        "x_step": 14/120,
+        "y_step": 14/120
+    }
+}
 
 
 def _raw_kde_exec(X_train, X_plot, X_test, GAMMA):
@@ -204,7 +221,9 @@ def main():
     for dataset_name in selected_datasets:
         X_train, X_train_densities, X_test, X_test_densities = load_data(dataset=dataset_name) 
 
-        x, y = np.mgrid[-7:7:(14/120), -7:7:(14/120)]
+        grid = GRID_PARAMS_DICT[dataset_name]
+
+        x, y = np.mgrid[grid["x_range"][0]:grid["x_range"][1]:grid["x_steps"], grid["y_range"][0]:grid["y_range"][1]:grid["y_steps"]]
         pos = np.dstack((x, y))
         X_plot = pos.reshape([14400,2])
 
