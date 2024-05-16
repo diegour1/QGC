@@ -123,12 +123,20 @@ def _vqkde_qrff_exec(
 
 
 def _vqkde_qeff_hea_exec(
-        X_train, GAMMA, DIM_X, N_TRAINING_DATA, LEARNING_RATE, RANDOM_STATE_QEFF, NUM_LAYERS_HEA, EPOCHS):
+        X_train, X_test, X_plot, GAMMA, DIM_X, N_TRAINING_DATA, LEARNING_RATE, RANDOM_STATE_QEFF, NUM_LAYERS_HEA, EPOCHS):
     y_expected = np.array([_raw_kde(x_temp[np.newaxis,:], X_train, GAMMA) for x_temp in X_train])*(np.pi/GAMMA)
 
     vc = VQKDE_QEFF_HEA(dim_x_param = DIM_X, n_qeff_qubits = NUM_QUBITS_FFS, n_ancilla_qubits =  NUM_ANCILLA_QUBITS, gamma=GAMMA, num_layers_hea = NUM_LAYERS_HEA, learning_rate = LEARNING_RATE, random_state = RANDOM_STATE_QEFF, n_training_data = N_TRAINING_DATA)
 
     vc.fit(X_train, y_expected, batch_size=16, epochs = EPOCHS)
+
+    predictions_train = vc.predict(X_train)
+    predictions_test = vc.predict(X_test)
+    predictions_plot = vc.predict(X_plot)
+
+    return predictions_train, predictions_test, predictions_plot
+
+    
 
 def _vqkde_qrff_hea_exec(
         X_train, X_test, X_plot, GAMMA, DIM_X, RANDOM_STATE_QRFF, N_FFS, LEARNING_RATE, N_TRAINING_DATA, EPOCHS, NUM_LAYERS_HEA):
