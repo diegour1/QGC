@@ -18,6 +18,14 @@ from models import *
 from models.HEA import *
 from models._raw_kde import _raw_kde
 
+params = {
+   'axes.labelsize': 12,
+   'legend.fontsize': 12,
+   'xtick.labelsize': 10,
+   'ytick.labelsize': 10,
+   'text.usetex': False,
+   'figure.figsize': [7.0, 6.0]
+   }
 
 MODELS = ["raw_kde", "dmkde_qeff", "dmkde_qrff", "vqkde_qeff", "vqkde_qrff", "vqkde_qeff_hea", "vqkde_qrff_hea"]
 DATASETS = ["potential_1", "potential_2", "star_eight"]
