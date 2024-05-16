@@ -1,7 +1,6 @@
-from . import data, models, misc
+from . import data, models
 
 __all__ = [
     'data',
     'models', 
-    'misc',
 ]

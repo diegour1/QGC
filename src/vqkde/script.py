@@ -41,6 +41,7 @@ RANDOM_STATE_QEFF_DICT = {"binomial": 3, "potential_1": 15, "potential_2": 78, "
 EPOCHS_DICT  = {"binomial": 0, "potential_1": 8, "potential_2": 0, "arc": 60, "star_eight": 60}
 LEARNING_RATE_DICT = {"binomial": 0.0005, "potential_1": 0.0005, "potential_2": 0.005, "arc": 0.0005, "star_eight": 0.0005}
 
+
 def _raw_kde_exec(X_train, X_plot, X_test, GAMMA):
     raw_kde_probability_train = np.array([_raw_kde(x_temp[np.newaxis,:], X_train, GAMMA) for x_temp in X_train])
     raw_kde_probability_test = np.array([_raw_kde(x_temp[np.newaxis,:], X_train, GAMMA) for x_temp in X_test])
@@ -104,7 +105,7 @@ def _vqkde_qrff_exec(
     X_feat_train = _predict_features(X_train, weights_ffs_temp, GAMMA)
     X_feat_test = _predict_features(X_test, weights_ffs_temp, GAMMA)
     X_feat_plot = _predict_features(X_plot, weights_ffs_temp, GAMMA)
-    y_expected =  np.array([_raw_kde(x_temp[np.newaxis,:], X_train, GAMMA) for x_temp in X_train])*(np.pi/GAMMA)
+    y_expected = np.array([_raw_kde(x_temp[np.newaxis,:], X_train, GAMMA) for x_temp in X_train])*(np.pi/GAMMA)
 
     U_train_conjTrans = np.array([np.conjugate(_create_U_train(X_feat_train[i]).T) for i in range(len(X_feat_train))])
     U_test_conjTrans = np.array([np.conjugate(_create_U_train(X_feat_test[i]).T) for i in range(len(X_feat_test))])
@@ -120,6 +121,37 @@ def _vqkde_qrff_exec(
 
     return predictions_train, predictions_test, predictions_plot
 
+
+def _vqkde_qeff_hea_exec(
+        X_train, GAMMA, DIM_X, N_TRAINING_DATA, LEARNING_RATE, RANDOM_STATE_QEFF, NUM_LAYERS_HEA, EPOCHS):
+    y_expected = np.array([_raw_kde(x_temp[np.newaxis,:], X_train, GAMMA) for x_temp in X_train])*(np.pi/GAMMA)
+
+    vc = VQKDE_QEFF_HEA(dim_x_param = DIM_X, n_qeff_qubits = NUM_QUBITS_FFS, n_ancilla_qubits =  NUM_ANCILLA_QUBITS, gamma=GAMMA, num_layers_hea = NUM_LAYERS_HEA, learning_rate = LEARNING_RATE, random_state = RANDOM_STATE_QEFF, n_training_data = N_TRAINING_DATA)
+
+    vc.fit(X_train, y_expected, batch_size=16, epochs = EPOCHS)
+
+def _vqkde_qrff_hea_exec(
+        X_train, X_test, X_plot, GAMMA, DIM_X, RANDOM_STATE_QRFF, N_FFS, LEARNING_RATE, N_TRAINING_DATA, EPOCHS, NUM_LAYERS_HEA):
+    r = np.random.RandomState(RANDOM_STATE_QRFF)
+    weights_ffs_temp = r.normal(0, 1, (DIM_X, N_FFS))
+
+    X_feat_train = _predict_features(X_train, weights_ffs_temp, GAMMA)
+    X_feat_test = _predict_features(X_test, weights_ffs_temp, GAMMA)
+    X_feat_plot = _predict_features(X_plot, weights_ffs_temp, GAMMA)
+    y_expected =  np.array([_raw_kde(x_temp[np.newaxis,:], X_train, GAMMA) for x_temp in X_train])*(np.pi/GAMMA)
+
+    U_train_conjTrans = np.array([np.conjugate(_create_U_train(X_feat_train[i]).T) for i in range(len(X_feat_train))])
+    U_test_conjTrans = np.array([np.conjugate(_create_U_train(X_feat_test[i]).T) for i in range(len(X_feat_test))])
+    U_plot_conjTrans = np.array([np.conjugate(_create_U_train(X_feat_plot[i]).T) for i in range(len(X_feat_plot))])
+
+    vc = VQKDE_QRFF_HEA(dim_x_param = DIM_X, n_qrff_qubits = NUM_QUBITS_FFS, n_ancilla_qubits =  NUM_ANCILLA_QUBITS, gamma=GAMMA, num_layers_hea = NUM_LAYERS_HEA, learning_rate = LEARNING_RATE, n_training_data = N_TRAINING_DATA)
+    vc.fit(U_train_conjTrans, y_expected, batch_size=16, epochs = EPOCHS)
+
+    predictions_train = vc.predict(U_train_conjTrans)
+    predictions_test = vc.predict(U_test_conjTrans)
+    predictions_plot = vc.predict(U_plot_conjTrans)
+
+    return predictions_train, predictions_test, predictions_plot
 
 def run(model, **kwargs):
 
@@ -175,9 +207,24 @@ def run(model, **kwargs):
             predictions_train, predictions_test, predictions_plot = _vqkde_qrff_exec(**required_dict)
         
         case "vqkde_qeff_hea":
-            pass
+            fn_args = set(getfullargspec(_vqkde_qeff_hea_exec).args)
+            fn_required_args = fn_args - set(getfullargspec(run).args)
+
+            required_dict = {
+                item: kwargs[item] for item in fn_required_args if item in kwargs
+            }
+
+            predictions_train, predictions_test, predictions_plot = _vqkde_qeff_hea_exec(**required_dict)
+
         case "vqkde_qrff_hea":
-            pass
+            fn_args = set(getfullargspec(_vqkde_qrff_hea_exec).args)
+            fn_required_args = fn_args - set(getfullargspec(run).args)
+
+            required_dict = {
+                item: kwargs[item] for item in fn_required_args if item in kwargs
+            }
+
+            predictions_train, predictions_test, predictions_plot = _vqkde_qrff_hea_exec(**required_dict)
 
     return predictions_train, predictions_test, predictions_plot
     
@@ -220,6 +267,7 @@ def main():
             "DIM_X": X_train.shape[1],
             "N_TRAINING_DATA": X_train.shape[0],
             "N_FFS": 2**NUM_QUBITS_FFS,
+            "NUM_LAYERS_HEA": 3,
         }
 
         for model_name in selected_models:
