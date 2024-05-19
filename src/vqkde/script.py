@@ -28,7 +28,7 @@ params = {
    }
 
 MODELS = ["raw_kde", "dmkde_qeff", "dmkde_qrff", "vqkde_qeff", "vqkde_qrff", "vqkde_qeff_hea", "vqkde_qrff_hea"]
-DATASETS = ["potential_1", "potential_2", "star_eight"]
+DATASETS = ["arc", "binomial", "potential_1", "potential_2", "star_eight"]
 
 NUM_QUBITS_FFS = 5 ## set 6 for the final experiments
 NUM_ANCILLA_QUBITS = 2 # set 2 for the final experiments
@@ -38,7 +38,21 @@ RANDOM_STATE_QRFF_DICT = {"binomial": 324, "potential_1": 125, "potential_2": 17
 RANDOM_STATE_QEFF_DICT = {"binomial": 3, "potential_1": 15, "potential_2": 78, "arc": 73, "star_eight": 24}
 EPOCHS_DICT  = {"binomial": 0, "potential_1": 8, "potential_2": 0, "arc": 60, "star_eight": 60}
 LEARNING_RATE_DICT = {"binomial": 0.0005, "potential_1": 0.0005, "potential_2": 0.005, "arc": 0.0005, "star_eight": 0.0005}
+
+
 GRID_PARAMS_DICT = {
+    "arc": {
+        "x_range": (-10, 40),
+        "y_range": (-15, 15),
+        "x_step": 50/120,
+        "y_step": 30/120
+    },
+    "binomial": {
+        "x_range": (-6, 6),
+        "y_range": (-6, 6),
+        "x_step": .1,
+        "y_step": .1
+    },
     "potential_1": {
         "x_range": (-4, 4),
         "y_range": (-4, 4),
@@ -181,7 +195,7 @@ def _vqkde_qrff_hea_exec(
 
 def _get_required_dict(fn, kwargs):
     fn_args = set(getfullargspec(fn).args)
-    fn_required_args = fn_args - set(getfullargspec(run).args)
+    fn_required_args = fn_args - set(getfullargspec(_run).args)
     return {item: kwargs[item] for item in fn_required_args if item in kwargs}
 
 

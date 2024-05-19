@@ -19,7 +19,8 @@ dependencies = [
     'tensorcircuit',   
     'tensorflow', 
     'numpy',  
-    'scipy' 
+    'scipy',
+    'tensorflow-probability'
 ]
 
 [tool.setuptools]
