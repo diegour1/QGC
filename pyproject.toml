@@ -12,15 +12,15 @@ authors = [
 ]
 
 dependencies = [
-    'cirq=1.2.0',
+    'cirq==1.2.0',
     'grpcio-status',
     'ipykernel',
-    'qiskit=0.44.1',
-    'tensorcircuit=0.11.0',
-    'tensorflow=2.13.0',
-    'numpy=1.24.3',
-    'scipy=1.11.2',
-    'tensorflow-probability=0.21.0'
+    'qiskit==0.44.1',
+    'tensorcircuit==0.11.0',
+    'tensorflow==2.13.0',
+    'numpy==1.24.3',
+    'scipy==1.11.2',
+    'tensorflow-probability==0.21.0'
 ]
 
 [tool.setuptools]
