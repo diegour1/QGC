@@ -14,9 +14,9 @@ import qmc.tf.models as qmc_models
 from data import load_data
 from data._dmkde_data import _predict_features, _create_U_train
 
-from models import *
-from models.HEA import *
-from models._raw_kde import _raw_kde
+from estimation import *
+from estimation.HEA import *
+from estimation._raw_kde import _raw_kde
 
 params = {
    'axes.labelsize': 12,
@@ -116,7 +116,7 @@ def _dmkde_classical_qrff_exec(N_FFS, GAMMA, RANDOM_STATE_QRFF, DIM_X, X_train, 
 def _vqkde_qeff_exec(X_train, X_test, X_plot, GAMMA, RANDOM_STATE_QEFF, EPOCHS, DIM_X, N_TRAINING_DATA):
     raw_kde_probability_train = np.array(
                 [_raw_kde(x_temp[np.newaxis,:], X_train, GAMMA) for x_temp in X_train])
-            
+
     LEARNING_RATE = 0.0005 ### Hyperparameter original 0.0005
     y_expected =  raw_kde_probability_train*(np.pi/GAMMA)
     vc = VQKDE_QEFF(dim_x_param = DIM_X, n_qeff_qubits = NUM_QUBITS_FFS, n_ancilla_qubits =  NUM_ANCILLA_QUBITS, gamma=GAMMA, learning_rate = LEARNING_RATE, random_state = RANDOM_STATE_QEFF, n_training_data = N_TRAINING_DATA)
@@ -168,7 +168,7 @@ def _vqkde_qeff_hea_exec(
 
     return predictions_train, predictions_test, predictions_plot
 
-    
+
 def _vqkde_qrff_hea_exec(
         X_train, X_test, X_plot, GAMMA, DIM_X, RANDOM_STATE_QRFF, N_FFS, LEARNING_RATE, N_TRAINING_DATA, EPOCHS, NUM_LAYERS_HEA):
     r = np.random.RandomState(RANDOM_STATE_QRFF)
@@ -217,7 +217,7 @@ def _run(model, **kwargs):
         return predictions_train, predictions_test, predictions_plot
 
     return predictions_train, predictions_test, predictions_plot
-    
+
 
 def main():
     parser = argparse.ArgumentParser(description="Test models on datasets.")
@@ -227,14 +227,14 @@ def main():
     parser.add_argument('--alldata', action='store_true', help='Run on all datasets')
     parser.add_argument('--allmodels', action='store_true', help='Run on all models')
     parser.add_argument('--all', action='store_true', help='Run on all models and data')
-    
+
     args = parser.parse_args()
 
     selected_models = args.model if (args.model and args.allmodels!=None and args.all!=None) else MODELS
     selected_datasets = args.dataset if (args.dataset and args.alldata!=None and args.all!=None) else DATASETS
 
     for dataset_name in selected_datasets:
-        X_train, X_train_densities, X_test, X_test_densities = load_data(dataset=dataset_name) 
+        X_train, X_train_densities, X_test, X_test_densities = load_data(dataset=dataset_name)
 
         grid = GRID_PARAMS_DICT[dataset_name]
 
@@ -245,9 +245,9 @@ def main():
         training_dict = {
             "x": x,
             "y": y,
-            "X_train": X_train, 
-            "X_train_densities": X_train_densities, 
-            "X_test": X_test, 
+            "X_train": X_train,
+            "X_train_densities": X_train_densities,
+            "X_test": X_test,
             "X_test_densities": X_test_densities,
             "X_plot": X_plot,
             "GAMMA": GAMMA_DICT[dataset_name],
@@ -267,14 +267,14 @@ def main():
         for model_name in selected_models:
             print("#####################################################")
             print(f"Running model {model_name} in dataset {dataset_name}", end="\n")
-            
+
             predictions_train, predictions_test, predictions_plot = _run(model_name, **training_dict)
-            
+
             plt.rcParams.update(params)
             plt.title(f"{model_name} - {dataset_name}")
             plt.contourf(x, y, predictions_plot.reshape([120,120]))
             plt.colorbar()
-            plt.savefig(os.path.join(model_output_dir, f"{model_name}_{dataset_name}.pdf")) 
+            plt.savefig(os.path.join(model_output_dir, f"{model_name}_{dataset_name}.pdf"))
 
             print("#####################################################", end="\n")
 

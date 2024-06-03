@@ -1,6 +1,7 @@
-from . import data, models
+from . import data, estimation, classification
 
 __all__ = [
     'data',
-    'models', 
+    'estimation',
+    'classification',
 ]
