@@ -12,11 +12,11 @@ def classical_dmkdc_qrff(X_train_param, Y_train_oh_param, X_test_param, n_qrffs_
   for j in range(num_classes_temp):
     fm_x = qmc_layers.QFeatureMapComplexRFF(dim_x_temp, dim=n_qrffs_param, gamma=gamma_param/2, random_state= rs_param)
     dmkdc_temp.append(qmc_models.ComplexQMDensity(fm_x, n_qrffs_param))
-
-  ## Prediction
+  
+    ## Prediction
   for j in range(num_classes_temp):
     dmkdc_temp[j].compile()
     dmkdc_temp[j].fit(X_train_param[Y_train_oh_param[:, j].astype(bool)], epochs=1)
     Y_pred_temp[:, j] = ((gamma_param/np.pi)**(dim_x_temp/2))*(dmkdc_temp[j].predict(X_test_param))
 
-  return ((y_train_oh.numpy().sum(axis=0)/len(y_train_oh)))*Y_pred_temp
+  return ((Y_train_oh_param.sum(axis=0)/len(Y_train_oh_param)))*Y_pred_temp
