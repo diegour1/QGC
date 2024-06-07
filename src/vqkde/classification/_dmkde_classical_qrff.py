@@ -5,7 +5,6 @@ def classical_dmkdc_qrff(X_train_param, Y_train_oh_param, X_test_param, n_qrffs_
   Y_train_oh_param = np.array(Y_train_oh_param)
   num_classes_temp = Y_train_oh_param.shape[1]
   Y_pred_temp = np.zeros((len(X_test_param), num_classes_temp))
-  sigma_temp = 1./(np.sqrt(2.*gamma_param))
 
   ## Training
   dmkdc_temp = []
