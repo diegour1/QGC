@@ -4,10 +4,13 @@ import tensorcircuit as tc
 from tensorcircuit import keras
 import tensorflow as tf
 
+from ..misc.misc import _indices_qubits_classes
+
 from functools import partial
 import numpy as np
 import math as m
 from scipy.stats import entropy, spearmanr
+
 
 
 
@@ -83,7 +86,7 @@ class VQKDC_MIXED_QEFF_HEA:
 
         ### indices classes, of ms
         n_qubits_classes_qeff_temp = self.num_classes_qubits + self.n_qeff_qubits
-        index_qubit_states = indices_qubits_clases(n_qubits_classes_qeff_temp, self.num_classes) # extract indices of the bit string of classes
+        index_qubit_states = _indices_qubits_classes(n_qubits_classes_qeff_temp, self.num_classes) # extract indices of the bit string of classes
 
 
         # Instantiate a circuit with the calculated number of qubits.

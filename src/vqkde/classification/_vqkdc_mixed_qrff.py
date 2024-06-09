@@ -4,7 +4,7 @@ import tensorcircuit as tc
 from tensorcircuit import keras
 import tensorflow as tf
 
-from ..misc.misc import _indices_qubits_classes
+from ..utils.utils import _indices_qubits_classes
 
 from functools import partial
 import numpy as np
