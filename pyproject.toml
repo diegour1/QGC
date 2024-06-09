@@ -16,11 +16,13 @@ dependencies = [
     'grpcio-status',
     'ipykernel',
     'qiskit==0.44.1',
+    'matplotlib==3.7.1',
     'numpy==1.24.3',
     'tabulate',
     'tensorcircuit==0.11.0',
     'tensorflow==2.13.0',
     'tensorflow-probability==0.21.0',
+    'scikit-learn==1.2.2',
     'scipy==1.11.2',
 ]
 
