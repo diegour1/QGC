@@ -7,12 +7,7 @@ import tensorcircuit as tc
 tc.set_backend("tensorflow")
 tc.set_dtype("complex128")
 
-import numpy as np
-
 from ..estimation import QFeatureMapQuantumEnhancedFF
-
-GAMMA = float(2**2) ### original 2**2
-N_FFS = 32 ### original 32
 
 def classical_dmkdc_qeff(X_train_param, Y_train_oh_param, X_test_param, n_qrffs_param, rs_param, gamma_param = 4.):
 
