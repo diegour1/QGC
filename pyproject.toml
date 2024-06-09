@@ -17,7 +17,6 @@ dependencies = [
     'ipykernel',
     'qiskit==0.44.1',
     'numpy==1.24.3',
-    'pylab',
     'tabulate',
     'tensorcircuit==0.11.0',
     'tensorflow==2.13.0',

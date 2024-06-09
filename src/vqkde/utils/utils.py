@@ -1,6 +1,6 @@
 
 import numpy as np
-import pylab as pl
+import matplotlib.pyplot as plt
 
 from sklearn.metrics import accuracy_score
 from scipy.stats import entropy
@@ -94,14 +94,14 @@ def evaluate_class_model(y_true_test_param, y_pred_test_kdc_param, y_pred_test_m
 def plot_data(X, y):
     """Function to visualize a 2D dataset"""
     y_unique = np.unique(y)
-    colors = pl.cm.rainbow(np.linspace(0.0, 1.0, y_unique.size))
+    colors = plt.cm.rainbow(np.linspace(0.0, 1.0, y_unique.size))
     for this_y, color in zip(y_unique, colors):
         this_X = X[y == this_y]
-        pl.scatter(this_X[:, 0], this_X[:, 1],  c=color,
+        plt.scatter(this_X[:, 0], this_X[:, 1],  c=color,
                     alpha=0.5, edgecolor='k',
                     label="Class %s" % this_y)
-    pl.legend(loc="best")
-    pl.title("Data")
+    plt.legend(loc="best")
+    plt.title("Data")
 
 def plot_decision_region(X_param, preds_plot_param):
     """Function to visualize the decision surface of a classifier"""
@@ -120,10 +120,10 @@ def plot_decision_region(X_param, preds_plot_param):
 
     ZZ = np.reshape(preds_plot_param[:, 1]/preds_plot_param.sum(axis=1), (grid_r, grid_c))
 
-    pl.contourf(XX, YY, ZZ, 100, cmap = pl.cm.coolwarm, vmin= 0, vmax=1)
-    pl.colorbar()
-    #CS = pl.contour(XX, YY, ZZ, 100, levels = [0.125*i for i in range(1,8)])
-    CS = pl.contour(XX, YY, ZZ, 100, levels = [0.5])
-    pl.clabel(CS, inline=1, fontsize=10)
-    pl.xlabel("x")
-    pl.ylabel("y")
+    plt.contourf(XX, YY, ZZ, 100, cmap = plt.cm.coolwarm, vmin= 0, vmax=1)
+    plt.colorbar()
+    #CS = plt.contour(XX, YY, ZZ, 100, levels = [0.125*i for i in range(1,8)])
+    CS = plt.contour(XX, YY, ZZ, 100, levels = [0.5])
+    plt.clabel(CS, inline=1, fontsize=10)
+    plt.xlabel("x")
+    plt.ylabel("y")
