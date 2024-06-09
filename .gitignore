@@ -162,3 +162,6 @@ cython_debug/
 
 *Makefile
 *.bat
+
+.DS_Store
+/.vs
