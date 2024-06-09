@@ -1,4 +1,4 @@
-
+import numpy as np
 import qmc.tf.layers as qmc_layers
 import qmc.tf.models as qmc_models
 

@@ -1,3 +1,7 @@
+import numpy as np
+import qmc.tf.layers as qmc_layers
+import qmc.tf.models as qmc_models
+
 def classical_dmkdc_qrff(X_train_param, Y_train_oh_param, X_test_param, n_qrffs_param, rs_param, gamma_param = 4.):
 
   ## Initialize values
