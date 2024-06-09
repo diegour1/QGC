@@ -1,3 +1,6 @@
+import numpy as np
+from sklearn.neighbors import KernelDensity
+
 def kernel_density_classification(X_train_param, Y_train_oh_param, X_test_param, gamma_param = 4.):
 
   ## Initialize values
