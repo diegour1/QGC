@@ -11,6 +11,17 @@ As the repo is in private mode, to install the library is necessary to [generate
 
 Paste your personal token in the input box that appears after running the next cell and press <kbd>Enter</kbd>. it will automatically install the package.
 
+## Usage
+
+After installation, you can import the whole library `import vqkdc`, or any of its submodules:
+    - Classification: `from vqkdc import classification`
+    - Estimation: `from vqkdc import estimation`
+    - Utils (`create_U_train`, `predict_features`, `plot_data` and `plot_decision_region`, etc.): `from vqkdc import utils`
+    - Data: `from vqkdc import data`
+    - Estimation experiments script: Located at root of package, can run models on ad-hoc datasets. Run in Linux/MacOS/UNIX/Google Colab as p.e
+    ```
+    python3 /usr/local/lib/pythonVERSION/dist-packages/vqkde/script.py --dataset potential_1 --allmodels --o /content/results
+    ```
 
 ## About the documentation
 
