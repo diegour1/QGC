@@ -11,6 +11,8 @@ authors = [
   { name="Sebastian Molina" }
 ]
 
+requires-python = ">=3.10.11"
+
 dependencies = [
     'cirq==1.2.0',
     'grpcio-status',
