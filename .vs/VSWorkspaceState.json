@@ -1,0 +1,13 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\.github",
+    "\\docs",
+    "\\examples",
+    "\\src",
+    "\\src\\vqkde",
+    "\\src\\vqkde\\classification",
+    "\\src\\vqkde\\estimation"
+  ],
+  "PreviewInSolutionExplorer": false
+}

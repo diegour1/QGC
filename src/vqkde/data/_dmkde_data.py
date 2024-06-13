@@ -30,7 +30,6 @@ def _predict_features(X, var, gamma):
     return X_feat
 
 
-
 def _create_U_train(x_train_param, seed=0):
     r"""
     Given the eigenvalues this function return a Unitary gate which converts :math:`|0\rangle` into :math:`|\psi\rangle`.
