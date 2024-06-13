@@ -1,13 +1,16 @@
-### Quantum variational KDC with QRFF
+### Quantum variational KDC with QEFF
 
 import tensorcircuit as tc
 from tensorcircuit import keras
 import tensorflow as tf
 
+from ...utils.utils import _indices_qubits_classes
+
 from functools import partial
 import numpy as np
 import math as m
 from scipy.stats import entropy, spearmanr
+
 
 
 
@@ -17,7 +20,7 @@ tc.set_dtype("complex128")
 pi = tf.constant(m.pi)
 
 
-class VQKDC_MIXED_QRFF_HEA:
+class VQKDC_MIXED_QEFF_HEA:
     r"""
     Defines the ready-to-use Quantum measurement classification (QMC) model implemented
     in TensorCircuit using the TensorFlow/Keras API. Any additional argument in the methods has to be Keras-compliant.
@@ -31,7 +34,7 @@ class VQKDC_MIXED_QRFF_HEA:
         An instantiated model ready to train with ad-hoc data.
 
     """
-    def __init__(self, dim_x_param, n_qeff_qubits, n_ancilla_qubits, num_classes_qubits, num_classes_param, gamma, n_training_data, num_layers_hea = 3, batch_size = 16, learning_rate = 0.0005, auto_compile=True):
+    def __init__(self, dim_x_param, n_qeff_qubits, n_ancilla_qubits, num_classes_qubits, num_classes_param, gamma, n_training_data, num_layers_hea = 3, batch_size = 16, learning_rate = 0.0005, random_state = 15, auto_compile=True):
 
         self.circuit = None
         self.gamma = gamma
@@ -47,6 +50,7 @@ class VQKDC_MIXED_QRFF_HEA:
         self.var_hea_ansatz_size = int(self.n_total_qubits_temp*(self.num_layers_hea+1)*2)
         self.learning_rate = learning_rate
         self.batch_size = batch_size
+        self.qeff_weights = tf.random.normal((dim_x_param, int(self.num_ffs*1-1)), mean = 0.0, stddev = 2.0/np.sqrt(self.num_ffs - 1), dtype=tf.dtypes.float64, seed = random_state)
 
         layer = keras.QuantumLayer(
             partial(self.layer),
@@ -60,7 +64,7 @@ class VQKDC_MIXED_QRFF_HEA:
 
     def layer(
             self,
-            U_dagger,
+            x_sample_param,
             var_hea_ansatz_param,
         ):
         r"""
@@ -77,13 +81,16 @@ class VQKDC_MIXED_QRFF_HEA:
         ### indices pure state hea
         index_iter_hea  = iter(np.arange(len(var_hea_ansatz_param)))
 
+        ### indices qeff
+        index_iter_qeff = iter(np.arange(self.qeff_weights.shape[1]))
+
         ### indices classes, of ms
         n_qubits_classes_qeff_temp = self.num_classes_qubits + self.n_qeff_qubits
-        index_qubit_states = indices_qubits_clases(n_qubits_classes_qeff_temp, self.num_classes) # extract indices of the bit string of classes
+        index_qubit_states = _indices_qubits_classes(n_qubits_classes_qeff_temp, self.num_classes) # extract indices of the bit string of classes
+
 
         # Instantiate a circuit with the calculated number of qubits.
         self.circuit = tc.Circuit(self.n_total_qubits_temp)
-
 
         def hea_ansatz(qc_param, num_qubits_param, num_layers_param):
           # encoding
@@ -103,9 +110,32 @@ class VQKDC_MIXED_QRFF_HEA:
         hea_ansatz(self.circuit, self.n_total_qubits_temp, self.num_layers_hea)
 
         # Value to predict
-        self.circuit.any(
-            *[n for n in range(self.num_classes_qubits, self.n_qeff_qubits + self.num_classes_qubits)], unitary=U_dagger
-        )
+
+        x_sample_temp = tf.expand_dims(x_sample_param, axis=0)
+        phases_temp = (tf.cast(tf.sqrt(self.gamma), tf.float64)*tf.linalg.matmul(tf.cast(x_sample_temp, tf.float64), self.qeff_weights))[0]
+        init_qubit_qeff_temp = self.num_classes_qubits # qubit at which the qaff mapping starts it starts after the qubits of the classes
+
+        def circuit_base_rz_qeff_n(qc_param, num_qubits_param, target_qubit_param, init_qubit_param):
+          if num_qubits_param == 1:
+            qc_param.rz(init_qubit_param, theta = phases_temp[next(index_iter_qeff)] )
+          elif num_qubits_param == 2:
+            qc_param.rz(target_qubit_param + init_qubit_param, theta = phases_temp[next(index_iter_qeff)])
+            qc_param.cnot(init_qubit_param, target_qubit_param + init_qubit_param)
+            qc_param.rz(target_qubit_param + init_qubit_param, theta = phases_temp[next(index_iter_qeff)])
+            return
+          else:
+            circuit_base_rz_qeff_n(qc_param, num_qubits_param-1, target_qubit_param, init_qubit_param)
+            qc_param.cnot(num_qubits_param-2 + init_qubit_param, target_qubit_param + init_qubit_param)
+            circuit_base_rz_qeff_n(qc_param, num_qubits_param-1, target_qubit_param, init_qubit_param)
+            target_qubit_param -= 1
+
+        # Applying the QEFF feature map
+
+        for i in reversed(range(1, self.n_qeff_qubits + 1)):
+          circuit_base_rz_qeff_n(self.circuit, i, i - 1, init_qubit_qeff_temp)
+
+        for i in range(init_qubit_qeff_temp, init_qubit_qeff_temp + self.n_qeff_qubits):
+          self.circuit.H(i)
 
         # Trace out ancilla qubits, find probability of [000] state for density estimation
         measurement_state = tc.quantum.reduced_density_matrix(
@@ -127,7 +157,7 @@ class VQKDC_MIXED_QRFF_HEA:
             Tensor. Categorical cross-entropy loss.
         """
         epsilon = 1e-7  # small constant to avoid division by zero
-        y_pred = tf.clip_by_value(y_pred, epsilon, np.inf)  # clip values to avoid log(0)
+        y_pred = tf.clip_by_value(y_pred, epsilon, np.inf)  # clip values to avoid log(0) originaly 1.0 - epsilon
         loss = -(1./self.n_training_data)*tf.reduce_sum(y_true * tf.math.log(y_pred), axis=-1)
         return loss
 

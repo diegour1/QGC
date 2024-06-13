@@ -4,6 +4,8 @@ import tensorcircuit as tc
 from tensorcircuit import keras
 import tensorflow as tf
 
+from ..utils.utils import _indices_qubits_classes
+
 from functools import partial
 import numpy as np
 import math as m
@@ -17,7 +19,7 @@ tc.set_dtype("complex128")
 pi = tf.constant(m.pi)
 
 
-class VQKDC_MIXED_QEFF_HEA:
+class VQKDC_MIXED_QEFF:
     r"""
     Defines the ready-to-use Quantum measurement classification (QMC) model implemented
     in TensorCircuit using the TensorFlow/Keras API. Any additional argument in the methods has to be Keras-compliant.
@@ -31,12 +33,11 @@ class VQKDC_MIXED_QEFF_HEA:
         An instantiated model ready to train with ad-hoc data.
 
     """
-    def __init__(self, dim_x_param, n_qeff_qubits, n_ancilla_qubits, num_classes_qubits, num_classes_param, gamma, n_training_data, num_layers_hea = 3, batch_size = 16, learning_rate = 0.0005, random_state = 15, auto_compile=True):
+    def __init__(self, dim_x_param, n_qeff_qubits, n_ancilla_qubits, num_classes_qubits, num_classes_param, gamma, n_training_data, batch_size = 16, learning_rate = 0.0005, random_state = 15, auto_compile=True):
 
         self.circuit = None
         self.gamma = gamma
         self.dim_x = dim_x_param
-        self.num_layers_hea = num_layers_hea
         self.num_classes = num_classes_param
         self.num_classes_qubits = num_classes_qubits
         self.n_qeff_qubits = n_qeff_qubits
@@ -44,14 +45,14 @@ class VQKDC_MIXED_QEFF_HEA:
         self.n_total_qubits_temp = self.num_classes_qubits + self.n_qeff_qubits + self.n_ancilla_qubits
         self.num_ffs = 2**self.n_qeff_qubits
         self.n_training_data = n_training_data
-        self.var_hea_ansatz_size = int(self.n_total_qubits_temp*(self.num_layers_hea+1)*2)
+        self.var_pure_state_parameters_size = 2*(2**self.n_total_qubits_temp - 1)
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.qeff_weights = tf.random.normal((dim_x_param, int(self.num_ffs*1-1)), mean = 0.0, stddev = 2.0/np.sqrt(self.num_ffs - 1), dtype=tf.dtypes.float64, seed = random_state)
 
         layer = keras.QuantumLayer(
             partial(self.layer),
-            [(self.var_hea_ansatz_size,)]
+            [(self.var_pure_state_parameters_size,)]
             )
 
         self.model = tf.keras.Sequential([layer])
@@ -62,7 +63,7 @@ class VQKDC_MIXED_QEFF_HEA:
     def layer(
             self,
             x_sample_param,
-            var_hea_ansatz_param,
+            var_pure_state_param,
         ):
         r"""
         Defines a Density Matrix Kernel Density Estimation quantum layer for learning with fixed qaff (Meaning of qaff?). (This function was originally named dmkde_mixed_variational_density_estimation_fixed_qaff)
@@ -75,36 +76,55 @@ class VQKDC_MIXED_QEFF_HEA:
             The probabilities of :math:`|k\rangle`, `|1\rangle`, ..., `|k\rangle` state for kernel density classification of the classes.
         """
 
-        ### indices pure state hea
-        index_iter_hea  = iter(np.arange(len(var_hea_ansatz_param)))
+        ### indices pure state
+        index_it = iter(np.arange(len(var_pure_state_param)))
 
         ### indices qeff
         index_iter_qeff = iter(np.arange(self.qeff_weights.shape[1]))
 
         ### indices classes, of ms
         n_qubits_classes_qeff_temp = self.num_classes_qubits + self.n_qeff_qubits
-        index_qubit_states = indices_qubits_clases(n_qubits_classes_qeff_temp, self.num_classes) # extract indices of the bit string of classes
+        index_qubit_states = _indices_qubits_classes(n_qubits_classes_qeff_temp, self.num_classes) # extract indices of the bit string of classes
 
 
         # Instantiate a circuit with the calculated number of qubits.
         self.circuit = tc.Circuit(self.n_total_qubits_temp)
 
-        def hea_ansatz(qc_param, num_qubits_param, num_layers_param):
-          # encoding
-          for i in range (0, num_qubits_param):
-            qc_param.ry(i, theta = var_hea_ansatz_param[next(index_iter_hea)])
-            qc_param.rz(i, theta = var_hea_ansatz_param[next(index_iter_hea)])
-          # layers
-          for j in range(num_layers_param):
-            for i in range (0, num_qubits_param-1):
-              qc_param.CNOT(i, i+1)
+        def circuit_base_ry_n(qc_param, num_qubits_param, target_qubit_param):
+            if num_qubits_param == 1:
+                qc_param.ry(0, theta = var_pure_state_param[next(index_it)])
+            elif num_qubits_param == 2:
+                qc_param.ry(target_qubit_param, theta=var_pure_state_param[next(index_it)])
+                qc_param.cnot(0, target_qubit_param)
+                qc_param.ry(target_qubit_param, theta=var_pure_state_param[next(index_it)])
+                return
+            else:
+                circuit_base_ry_n(qc_param, num_qubits_param-1, target_qubit_param)
+                qc_param.cnot(num_qubits_param-2, target_qubit_param)
+                circuit_base_ry_n(qc_param, num_qubits_param-1, target_qubit_param)
+                target_qubit_param -= 1
 
-            for i in range (0, num_qubits_param):
-              qc_param.ry(i, theta= var_hea_ansatz_param[next(index_iter_hea)])
-              qc_param.rz(i, theta= var_hea_ansatz_param[next(index_iter_hea)])
+        def circuit_base_rz_n(qc_param, num_qubits_param, target_qubit_param):
+            if num_qubits_param == 1:
+                qc_param.rz(0, theta = var_pure_state_param[next(index_it)])
+            elif num_qubits_param == 2:
+                qc_param.rz(target_qubit_param, theta=var_pure_state_param[next(index_it)])
+                qc_param.cnot(0, target_qubit_param)
+                qc_param.rz(target_qubit_param, theta=var_pure_state_param[next(index_it)])
+                return
+            else:
+                circuit_base_rz_n(qc_param, num_qubits_param-1, target_qubit_param)
+                qc_param.cnot(num_qubits_param-2, target_qubit_param)
+                circuit_base_rz_n(qc_param, num_qubits_param-1, target_qubit_param)
+                target_qubit_param -= 1
 
-        ## learning pure state with HEA
-        hea_ansatz(self.circuit, self.n_total_qubits_temp, self.num_layers_hea)
+        # Learning pure state
+        for i in range(1, self.n_total_qubits_temp+1):
+            circuit_base_ry_n(self.circuit, i, i-1)
+
+        # Learning pure state complex phase
+        for j in range(1, self.n_total_qubits_temp+1):
+            circuit_base_rz_n(self.circuit, j, j-1)
 
         # Value to predict
 
