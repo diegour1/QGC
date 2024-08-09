@@ -176,7 +176,7 @@ class VQKDC_MIXED_QEFF:
             None.
         """
         self.model.compile(
-            loss = "custom_categorical_crossentropy",
+            loss = "categorical_crossentropy",
             optimizer=optimizer(self.learning_rate),
             metrics=["accuracy"],
             **kwargs
