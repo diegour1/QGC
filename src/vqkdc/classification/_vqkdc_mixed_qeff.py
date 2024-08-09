@@ -161,26 +161,9 @@ class VQKDC_MIXED_QEFF:
         measurements_results = tc.backend.real(tf.stack([measurement_state[index_qubit_states[i], index_qubit_states[i]] for i in range(self.num_classes)]))
         return measurements_results
 
-    def custom_categorical_crossentropy(self, y_true, y_pred):
-        ## code generated with chat gpt
-        """
-        Custom implementation of categorical cross-entropy loss function.
-
-        Parameters:
-            y_true: Tensor. True labels in one-hot encoded format.
-            y_pred: Tensor. Predicted probabilities for each class.
-
-        Returns:
-            Tensor. Categorical cross-entropy loss.
-        """
-        epsilon = 1e-7  # small constant to avoid division by zero
-        y_pred = tf.clip_by_value(y_pred, epsilon, np.inf)  # clip values to avoid log(0) originaly 1.0 - epsilon
-        loss = -(1./self.n_training_data)*tf.reduce_sum(y_true * tf.math.log(y_pred), axis=-1)
-        return loss
-
     def compile(
             self,
-            optimizer=tf.keras.optimizers.legacy.Adam, # originally 0.0005
+            optimizer=tf.keras.optimizers.Adam,
             **kwargs):
         r"""
         Method to compile the model.
@@ -193,7 +176,7 @@ class VQKDC_MIXED_QEFF:
             None.
         """
         self.model.compile(
-            loss = self.custom_categorical_crossentropy,
+            loss = "categorical_crossentropy",
             optimizer=optimizer(self.learning_rate),
             metrics=["accuracy"],
             **kwargs
