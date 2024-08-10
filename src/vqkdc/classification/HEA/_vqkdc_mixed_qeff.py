@@ -143,6 +143,30 @@ class VQKDC_MIXED_QEFF_HEA:
                         cut=[m for m in range(n_qubits_classes_qeff_temp, self.n_total_qubits_temp)])
         measurements_results = tc.backend.real(tf.stack([measurement_state[index_qubit_states[i], index_qubit_states[i]] for i in range(self.num_classes)]))
         return measurements_results
+    
+    def custom_categorical_crossentropy_mean(self, y_true, y_pred):
+      ## code generated with chat gpt
+      """
+      Compute the categorical cross-entropy loss with mean reduction.
+
+      Args:
+      y_true: Tensor of true labels, shape (batch_size, num_classes).
+      y_pred: Tensor of predicted probabilities, shape (batch_size, num_classes).
+
+      Returns:
+      Scalar tensor representing the mean loss over the batch.
+      """
+      # Ensure predictions are clipped to avoid log(0)
+      epsilon_two = 1e-7  # small constant to avoid division by zero
+      y_pred = tf.clip_by_value(y_pred, epsilon_two, np.inf)  # clip values to avoid log(0) originaly 1.0 - epsilon
+
+      # Compute the categorical cross-entropy loss for each sample
+      loss = -tf.reduce_sum(y_true * tf.math.log(y_pred), axis=-1)
+      
+      # Compute the mean loss over the batch
+      mean_loss = tf.reduce_mean(loss)
+      
+      return mean_loss
 
     def compile(
             self,
@@ -159,11 +183,12 @@ class VQKDC_MIXED_QEFF_HEA:
             None.
         """
         self.model.compile(
-            loss = "categorical_crossentropy",
+            loss = self.custom_categorical_crossentropy_mean,
             optimizer=optimizer(self.learning_rate),
             metrics=["accuracy"],
             **kwargs
         )
+    
     def fit(self, x_train, y_train, batch_size=16, epochs = 30, **kwargs):
         r"""
         Method to fit (train) the model using the ad-hoc dataset.
