@@ -33,7 +33,7 @@ class VQKDC_MIXED_QEFF:
         An instantiated model ready to train with ad-hoc data.
 
     """
-    def __init__(self, dim_x_param, n_qeff_qubits, n_ancilla_qubits, num_classes_qubits, num_classes_param, gamma, n_training_data, batch_size = 16, learning_rate = 0.0005, random_state = 15, auto_compile=True):
+    def __init__(self, dim_x_param, n_qeff_qubits, n_ancilla_qubits, num_classes_qubits, num_classes_param, gamma, n_training_data, reduction = None, training_type = "generative", batch_size = 16, learning_rate = 0.0005, random_state = 15, auto_compile=True):
 
         self.circuit = None
         self.gamma = gamma
@@ -46,6 +46,8 @@ class VQKDC_MIXED_QEFF:
         self.num_ffs = 2**self.n_qeff_qubits
         self.n_training_data = n_training_data
         self.var_pure_state_parameters_size = 2*(2**self.n_total_qubits_temp - 1)
+        self.reduction  = reduction
+        self.training_type = training_type
         self.learning_rate = learning_rate
         self.batch_size = batch_size
         self.qeff_weights = tf.random.normal((dim_x_param, int(self.num_ffs*1-1)), mean = 0.0, stddev = 2.0/np.sqrt(self.num_ffs - 1), dtype=tf.dtypes.float64, seed = random_state)
@@ -159,9 +161,11 @@ class VQKDC_MIXED_QEFF:
                         self.circuit.state(),
                         cut=[m for m in range(n_qubits_classes_qeff_temp, self.n_total_qubits_temp)])
         measurements_results = tc.backend.real(tf.stack([measurement_state[index_qubit_states[i], index_qubit_states[i]] for i in range(self.num_classes)]))
+        if self.training_type == "discriminative":
+          measurements_results = measurements_results / tf.reduce_sum(measurements_results, axis = -1)
         return measurements_results
-    
-    def custom_categorical_crossentropy_mean(self, y_true, y_pred):
+
+    def custom_categorical_crossentropy(self, y_true, y_pred):
       ## code generated with the aid of chat gpt
       """
       Compute the categorical cross-entropy loss with mean reduction.
@@ -179,11 +183,19 @@ class VQKDC_MIXED_QEFF:
 
       # Compute the categorical cross-entropy loss for each sample
       loss = -tf.reduce_sum(y_true * tf.math.log(y_pred), axis=-1)
-      
-      # Compute the mean loss over the batch
-      mean_loss = tf.reduce_mean(loss)
-      
-      return mean_loss
+
+      if self.reduction == "none":
+        return loss
+      elif self.reduction == "mean":
+        # Compute the mean loss over the batch
+        mean_loss = tf.reduce_mean(loss)
+        return mean_loss
+      elif self.reduction == "sum":
+        # Compute the sum loss over the batch
+        sum_loss = tf.reduce_sum(loss)
+        return sum_loss
+      else:
+        return loss
 
     def compile(
             self,
@@ -200,7 +212,7 @@ class VQKDC_MIXED_QEFF:
             None.
         """
         self.model.compile(
-            loss = self.custom_categorical_crossentropy_mean,
+            loss = self.custom_categorical_crossentropy,
             optimizer=optimizer(self.learning_rate),
             metrics=["accuracy"],
             **kwargs
