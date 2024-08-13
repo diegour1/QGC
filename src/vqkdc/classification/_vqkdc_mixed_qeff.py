@@ -33,7 +33,7 @@ class VQKDC_MIXED_QEFF:
         An instantiated model ready to train with ad-hoc data.
 
     """
-    def __init__(self, dim_x_param, n_qeff_qubits, n_ancilla_qubits, num_classes_qubits, num_classes_param, gamma, n_training_data, reduction = None, training_type = "generative", batch_size = 16, learning_rate = 0.0005, random_state = 15, auto_compile=True):
+    def __init__(self, dim_x_param, n_qeff_qubits, n_ancilla_qubits, num_classes_qubits, num_classes_param, gamma, n_training_data, reduction = "none", training_type = "generative", batch_size = 16, learning_rate = 0.0005, random_state = 15, auto_compile=True):
 
         self.circuit = None
         self.gamma = gamma
