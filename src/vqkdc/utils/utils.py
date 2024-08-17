@@ -56,39 +56,54 @@ def predict_features(X, var, gamma):
     return X_feat
 
 
-def evaluate_class_model(y_true_test_param, y_pred_test_kdc_param, y_pred_test_model_param, y_plot_kdc_param, y_plot_model_param, model_name_param):
+## evaluate accuracy and conditional density estimation
 
-    # Accuracy kdc
-    accuracy_kdc_temp = accuracy_score(y_true_test_param, np.argmax(y_pred_test_kdc_param, axis = 1))
+def evaluate_class_model(y_true_test_param, y_true_train_param, y_pred_test_kdc_param,  y_pred_train_dmkdc_param, y_pred_train_model_param, y_pred_test_model_param, model_name_param, gamma_param, grid_volume_param, dim_x_param = 1.0):
 
-    # Accuracy model
-    accuracy_model_temp = accuracy_score(y_true_test_param, np.argmax(y_pred_test_model_param, axis = 1))
+  # Accuracy kdc
+  accuracy_kdc_temp = accuracy_score(y_true_test_param, np.argmax(y_pred_test_kdc_param, axis = 1))
 
-    # kullback-Leibler divergence plot
-    y_plot_kdc_temp = y_plot_kdc_param.reshape(-1, 1)
-    y_plot_model_temp = y_plot_model_param.reshape(-1, 1)
-    kldiv_kdc_vs_model = entropy(y_plot_kdc_temp, y_plot_model_temp)
+  # Accuracy model
+  accuracy_model_temp = accuracy_score(y_true_test_param, np.argmax(y_pred_test_model_param, axis = 1))
 
-    # mean average error
-    absolute_differences_temp = np.abs(y_plot_kdc_temp - y_plot_model_temp)
-    average_error_temp = np.mean(absolute_differences_temp)
+  # kullback-Leibler divergence test
+  y_test_kdc_temp = y_pred_test_kdc_param.reshape(-1,)
+  y_test_model_temp = y_pred_test_model_param.reshape(-1,)
+  kldiv_kdc_vs_model = tf.keras.backend.sum(y_test_kdc_temp * tf.keras.backend.log(y_test_kdc_temp / (y_test_model_temp)), axis=-1).numpy()
 
-    # Calculate spearmann correlation per class, i.e., the ranks of the density values
-    # spearman class 0
-    ranks1_class0 = np.array(y_plot_kdc_param[:, 0]).argsort().argsort()
-    ranks2_class0 = y_plot_model_param[:, 0].argsort().argsort()
-    # spearman class 1
-    ranks1_class1 = np.array(y_plot_kdc_param[:, 1]).argsort().argsort()
-    ranks2_class1 = y_plot_model_param[:, 1].argsort().argsort()
+  # mean average error
+  absolute_differences_temp = np.abs(y_test_kdc_temp - y_test_model_temp)
+  average_error_temp = np.mean(absolute_differences_temp)
 
-    # Calculate the Spearman correlation
-    spearman_corr_class0, _ = spearmanr(ranks2_class0, ranks1_class0)
-    spearman_corr_class1, _ = spearmanr(ranks2_class1, ranks1_class1)
+  # Calculate spearmann correlation per class, i.e., the ranks of the density values
+  # spearman class 0
+  ranks1_class0 = np.array(y_pred_test_kdc_param[:, 0]).argsort().argsort()
+  ranks2_class0 = y_pred_test_model_param[:, 0].argsort().argsort()
+  # spearman class 1
+  ranks1_class1 = np.array(y_pred_test_kdc_param[:, 1]).argsort().argsort()
+  ranks2_class1 = y_pred_test_model_param[:, 1].argsort().argsort()
 
-    # build table
-    table = [["Accuracy KDC:", np.round(accuracy_kdc_temp,3)], [f"Accuracy {model_name_param}:", np.round(accuracy_model_temp,3)], [f"KL-div KDC vs {model_name_param}:", np.round(kldiv_kdc_vs_model,3)], [f"MAE KDC vs {model_name_param}:", np.round(average_error_temp,3)], [f"Spearmann class 0 KDC vs {model_name_param}:", np.round(spearman_corr_class0,3)], [f"Spearmann class 1 KDC vs {model_name_param}:", np.round(spearman_corr_class1, 3)]]
-    headers = ['Metrics', f"KDC vs {model_name_param}"]
-    print(tabulate(table, headers), "\n")
+  # Calculate the Spearman correlation
+  spearman_corr_class0, _ = spearmanr(ranks2_class0, ranks1_class0)
+  spearman_corr_class1, _ = spearmanr(ranks2_class1, ranks1_class1)
+
+  # Calculate relative entropy
+  preds_train_dmkdc_loss = np.zeros(len(y_pred_train_model_param))
+  preds_train_model_loss = np.zeros(len(y_pred_train_model_param))
+  for i in range(len(y_pred_train_model_param)):
+    if y_true_train_param[i] == 0:
+      preds_train_model_loss[i] = y_pred_train_model_param[i, 0]
+      preds_train_dmkdc_loss[i] = y_pred_train_dmkdc_param[i, 0]
+    else:
+      preds_train_model_loss[i] = y_pred_train_model_param[i, 1]
+      preds_train_dmkdc_loss[i] = y_pred_train_dmkdc_param[i, 1]
+
+  relative_entropy_train = (1./len(y_pred_train_dmkdc_param))*tf.reduce_sum(tf.math.log(((gamma_param/np.pi)**((dim_x_param/2.0)))*preds_train_dmkdc_loss))-(1./len(y_pred_train_model_param))*tf.reduce_sum(tf.math.log(((gamma_param/np.pi)**((dim_x_param/2.0)))*preds_train_model_loss))
+
+  # build table
+  table = [["Accuracy KDC:", np.round(accuracy_kdc_temp,3)], [f"Accuracy {model_name_param}:", np.round(accuracy_model_temp,3)], [f"KL-div KDC vs {model_name_param}:", np.round(kldiv_kdc_vs_model,3)], [f"MAE KDC vs {model_name_param}:", np.round(average_error_temp,3)], [f"Spearmann class 0 KDC vs {model_name_param}:", np.round(spearman_corr_class0,3)], [f"Spearmann class 1 KDC vs {model_name_param}:", np.round(spearman_corr_class1, 3)], [f"relative_entropy_train DMKDC vs {model_name_param}:", np.round(relative_entropy_train, 3)]]
+  headers = ['Metrics', f"KDC vs {model_name_param}"]
+  print(tabulate(table, headers), "\n")
 
 
 def plot_data(X, y):
