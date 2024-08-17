@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score
 from scipy.stats import entropy
 from scipy.stats import spearmanr
+import tensorflow as tf
 
 from tabulate import tabulate
 
