@@ -33,12 +33,11 @@ class VQKDC_MIXED_QRFF_HEA:
         An instantiated model ready to train with ad-hoc data.
 
     """
-    def __init__(self, dim_x_param, n_qeff_qubits, n_ancilla_qubits, num_classes_qubits, num_classes_param, gamma, n_training_data, num_layers_hea = 3, batch_size = 16, learning_rate = 0.0005, auto_compile=True):
+    def __init__(self, dim_x_param, n_qeff_qubits, n_ancilla_qubits, num_classes_qubits, num_classes_param, gamma, n_training_data, num_layers_hea = 3, reduction = "none", training_type = "generative", batch_size = 16, learning_rate = 0.0005, random_state = 15, auto_compile=True):
 
         self.circuit = None
         self.gamma = gamma
         self.dim_x = dim_x_param
-        self.num_layers_hea = num_layers_hea
         self.num_classes = num_classes_param
         self.num_classes_qubits = num_classes_qubits
         self.n_qeff_qubits = n_qeff_qubits
@@ -46,9 +45,12 @@ class VQKDC_MIXED_QRFF_HEA:
         self.n_total_qubits_temp = self.num_classes_qubits + self.n_qeff_qubits + self.n_ancilla_qubits
         self.num_ffs = 2**self.n_qeff_qubits
         self.n_training_data = n_training_data
+        self.reduction  = reduction
+        self.training_type = training_type
         self.var_hea_ansatz_size = int(self.n_total_qubits_temp*(self.num_layers_hea+1)*2)
         self.learning_rate = learning_rate
         self.batch_size = batch_size
+        self.qeff_weights = tf.random.normal((dim_x_param, int(self.num_ffs*1-1)), mean = 0.0, stddev = 2.0/np.sqrt(self.num_ffs - 1), dtype=tf.dtypes.float64, seed = random_state)
 
         layer = keras.QuantumLayer(
             partial(self.layer),
@@ -79,13 +81,15 @@ class VQKDC_MIXED_QRFF_HEA:
         ### indices pure state hea
         index_iter_hea  = iter(np.arange(len(var_hea_ansatz_param)))
 
+        ### indices qeff
+        index_iter_qeff = iter(np.arange(self.qeff_weights.shape[1]))
+
         ### indices classes, of ms
         n_qubits_classes_qeff_temp = self.num_classes_qubits + self.n_qeff_qubits
         index_qubit_states = _indices_qubits_classes(n_qubits_classes_qeff_temp, self.num_classes) # extract indices of the bit string of classes
 
         # Instantiate a circuit with the calculated number of qubits.
         self.circuit = tc.Circuit(self.n_total_qubits_temp)
-
 
         def hea_ansatz(qc_param, num_qubits_param, num_layers_param):
           # encoding
@@ -114,10 +118,12 @@ class VQKDC_MIXED_QRFF_HEA:
                         self.circuit.state(),
                         cut=[m for m in range(n_qubits_classes_qeff_temp, self.n_total_qubits_temp)])
         measurements_results = tc.backend.real(tf.stack([measurement_state[index_qubit_states[i], index_qubit_states[i]] for i in range(self.num_classes)]))
+        if self.training_type == "discriminative":
+          measurements_results = measurements_results / tf.reduce_sum(measurements_results, axis = -1)
         return measurements_results
-    
-    def custom_categorical_crossentropy_mean(self, y_true, y_pred):
-      ## code generated with chat gpt
+
+    def custom_categorical_crossentropy(self, y_true, y_pred):
+      ## code generated with the aid of chat gpt
       """
       Compute the categorical cross-entropy loss with mean reduction.
 
@@ -134,11 +140,19 @@ class VQKDC_MIXED_QRFF_HEA:
 
       # Compute the categorical cross-entropy loss for each sample
       loss = -tf.reduce_sum(y_true * tf.math.log(y_pred), axis=-1)
-      
-      # Compute the mean loss over the batch
-      mean_loss = tf.reduce_mean(loss)
-      
-      return mean_loss
+
+      if self.reduction == "none":
+        return loss
+      elif self.reduction == "mean":
+        # Compute the mean loss over the batch
+        mean_loss = tf.reduce_mean(loss)
+        return mean_loss
+      elif self.reduction == "sum":
+        # Compute the sum loss over the batch
+        sum_loss = tf.reduce_sum(loss)
+        return sum_loss
+      else:
+        return loss
 
     def compile(
             self,
@@ -155,7 +169,7 @@ class VQKDC_MIXED_QRFF_HEA:
             None.
         """
         self.model.compile(
-            loss = self.custom_categorical_crossentropy_mean,
+            loss = self.custom_categorical_crossentropy,
             optimizer=optimizer(self.learning_rate),
             metrics=["accuracy"],
             **kwargs
