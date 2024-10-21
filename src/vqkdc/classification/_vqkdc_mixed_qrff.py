@@ -80,9 +80,6 @@ class VQKDC_MIXED_QRFF:
         ### indices pure state
         index_it = iter(np.arange(len(var_pure_state_param)))
 
-        ### indices qeff
-        index_iter_qeff = iter(np.arange(self.qeff_weights.shape[1]))
-
         ### indices classes, of ms
         n_qubits_classes_qeff_temp = self.num_classes_qubits + self.n_qeff_qubits
         index_qubit_states = _indices_qubits_classes(n_qubits_classes_qeff_temp, self.num_classes) # extract indices of the bit string of classes
