@@ -50,7 +50,6 @@ class VQKDC_MIXED_QRFF:
         self.training_type = training_type
         self.learning_rate = learning_rate
         self.batch_size = batch_size
-        self.qeff_weights = tf.random.normal((dim_x_param, int(self.num_ffs*1-1)), mean = 0.0, stddev = 2.0/np.sqrt(self.num_ffs - 1), dtype=tf.dtypes.float64, seed = random_state)
 
         layer = keras.QuantumLayer(
             partial(self.layer),
