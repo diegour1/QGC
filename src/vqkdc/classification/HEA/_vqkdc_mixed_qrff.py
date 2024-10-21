@@ -38,6 +38,7 @@ class VQKDC_MIXED_QRFF_HEA:
         self.circuit = None
         self.gamma = gamma
         self.dim_x = dim_x_param
+        self.num_layers_hea = num_layers_hea
         self.num_classes = num_classes_param
         self.num_classes_qubits = num_classes_qubits
         self.n_qeff_qubits = n_qeff_qubits
@@ -50,7 +51,6 @@ class VQKDC_MIXED_QRFF_HEA:
         self.var_hea_ansatz_size = int(self.n_total_qubits_temp*(self.num_layers_hea+1)*2)
         self.learning_rate = learning_rate
         self.batch_size = batch_size
-        self.qeff_weights = tf.random.normal((dim_x_param, int(self.num_ffs*1-1)), mean = 0.0, stddev = 2.0/np.sqrt(self.num_ffs - 1), dtype=tf.dtypes.float64, seed = random_state)
 
         layer = keras.QuantumLayer(
             partial(self.layer),
@@ -80,9 +80,6 @@ class VQKDC_MIXED_QRFF_HEA:
 
         ### indices pure state hea
         index_iter_hea  = iter(np.arange(len(var_hea_ansatz_param)))
-
-        ### indices qeff
-        index_iter_qeff = iter(np.arange(self.qeff_weights.shape[1]))
 
         ### indices classes, of ms
         n_qubits_classes_qeff_temp = self.num_classes_qubits + self.n_qeff_qubits
