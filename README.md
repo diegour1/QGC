@@ -1,5 +1,5 @@
-# VQKDC
-Variational quantum kernel density classification Python library
+# QGC
+Quantum generative classification
 
 ## Installation
 
